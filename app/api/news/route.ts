@@ -89,24 +89,26 @@ export async function POST(req: Request) {
       }
     }
 
-    // Insert into database
-    const db = await getDB();
-    await db
-      .request()
-      .input('title', sql.NVarChar, headline)
-      .input('content', sql.NVarChar, content)
-      .input('categoryId', sql.Int, parseInt(categoryId))
-      .input('author', sql.NVarChar, author)
-      .input('publishDate', sql.DateTime, new Date(date))
-      .input('gallery', sql.NVarChar, JSON.stringify(galleryPaths))
-      .input('breakingDuration', sql.Int, parseInt(breakingDuration))
-      .query(`
-        INSERT INTO NewsArticles 
-        (Title, Content, CategoryId, Author, PublishDate, Gallery, BreakingDurationMinutes, ViewCount)
-        VALUES 
-        (@title, @content, @categoryId, @author, @publishDate, @gallery, @breakingDuration, 0)
-      `);
-
+   // Always use current datetime (ignore form date for now)
+  const publishDateTime = new Date();
+// Insert into database
+const db = await getDB();
+await db
+  .request()
+  .input('title', sql.NVarChar, headline)
+  .input('content', sql.NVarChar, content)
+  .input('categoryId', sql.Int, parseInt(categoryId))
+  .input('author', sql.NVarChar, author)
+  .input('publishDate', sql.DateTime, publishDateTime)
+  .input('gallery', sql.NVarChar, JSON.stringify(galleryPaths))
+  .input('breakingDuration', sql.Int, parseInt(breakingDuration))
+  .query(`
+    INSERT INTO NewsArticles 
+    (Title, Content, CategoryId, Author, PublishDate, Gallery, BreakingDurationMinutes, ViewCount)
+    VALUES 
+    (@title, @content, @categoryId, @author, @publishDate, @gallery, @breakingDuration, 0)
+  `);
+  
     return NextResponse.json({ status: 'OK', message: 'News published successfully!' });
   } catch (e: any) {
     console.error('POST news error:', e);
@@ -161,17 +163,19 @@ export async function PUT(req: Request) {
       galleryPaths = parseGallery(existing.recordset[0]?.Gallery || '[]');
     }
 
-    // Update database
-    await db
-      .request()
-      .input('id', sql.Int, parseInt(editId))
-      .input('title', sql.NVarChar, headline)
-      .input('content', sql.NVarChar, content)
-      .input('categoryId', sql.Int, parseInt(categoryId))
-      .input('author', sql.NVarChar, author)
-      .input('publishDate', sql.DateTime, new Date(date))
-      .input('gallery', sql.NVarChar, JSON.stringify(galleryPaths))
-      .input('breakingDuration', sql.Int, parseInt(breakingDuration))
+   // Always use current datetime for updates
+const publishDateTime = new Date();
+// Update database
+await db
+  .request()
+  .input('id', sql.Int, parseInt(editId))
+  .input('title', sql.NVarChar, headline)
+  .input('content', sql.NVarChar, content)
+  .input('categoryId', sql.Int, parseInt(categoryId))
+  .input('author', sql.NVarChar, author)
+  .input('publishDate', sql.DateTime, publishDateTime)
+  .input('gallery', sql.NVarChar, JSON.stringify(galleryPaths))
+  .input('breakingDuration', sql.Int, parseInt(breakingDuration))
       .query(`
         UPDATE NewsArticles 
         SET Title = @title,
