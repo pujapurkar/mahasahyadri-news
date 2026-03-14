@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   const [vividha, setVividha] = useState<WidgetItem[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const [form, setForm] = useState({ headline: '', content: '', categoryId: '0', author: '', date: '', breakingDuration: '60' });
+  const [form, setForm] = useState({ headline: '', content: '', categoryId: '0', author: '', date: '', breakingDuration: '60' , isHero: false });
   const [formMsg, setFormMsg] = useState({ text: '', color: 'green' });
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -115,17 +115,17 @@ export default function AdminDashboard() {
     setFormMsg({ text: '', color: 'green' });
     setImages([]); setPreviews([]);
     if (id) {
-      setEditId(id);
-      const res = await fetch(`/api/news/${id}`);
-      const d = await res.json();
+    setEditId(id);
+    const res = await fetch(`/api/news/${id}?admin=1`); // ← ADD ?admin=1
+    const d = await res.json();
       if (d.status === 'OK') {
         const n = d.data;
-        setForm({ headline: n.Title, content: n.Content, categoryId: String(n.CategoryId), author: n.Author, date: n.PublishDate?.split('T')[0] || '', breakingDuration: String(n.BreakingDurationMinutes || 60) });
+        setForm({ headline: n.Title, content: n.Content, categoryId: String(n.CategoryId), author: n.Author, date: n.PublishDate?.split('T')[0] || '', breakingDuration: String(n.BreakingDurationMinutes || 60) , isHero: n.IsHero || false });
         if (n.Gallery?.length) setFormMsg({ text: 'नोट: सध्याच्या प्रतिमा बदलण्यासाठी नवीन प्रतिमा निवडा', color: 'blue' });
       }
     } else {
       setEditId(null);
-      setForm({ headline: '', content: '', categoryId: '0', author: '', date: new Date().toISOString().split('T')[0], breakingDuration: '60' });
+      setForm({ headline: '', content: '', categoryId: '0', author: '', date: new Date().toISOString().split('T')[0], breakingDuration: '60', isHero: false });
     }
     setModalOpen(true);
   }
@@ -152,6 +152,7 @@ export default function AdminDashboard() {
     fd.append('author', form.author);
     fd.append('date', form.date);
     fd.append('breakingDuration', form.breakingDuration);
+    fd.append('isHero', form.isHero ? '1' : '0');
     if (editId) fd.append('editId', String(editId));
     images.forEach(img => fd.append('images', img));
 
@@ -325,7 +326,7 @@ export default function AdminDashboard() {
         <div className="hero-slider">
           {sliderNews.map((item, i) => (
             <div key={item.Id} className={`slide ${i === currentSlide ? 'active' : ''}`}
-              onClick={() => router.push(`/news/${item.Id}`)} style={{ cursor: 'pointer' }}>
+              onClick={() => router.push(`/user/news/${item.Id}?admin=1`)} style={{ cursor: 'pointer' }}>
               <img src={item.HeroImage} alt={item.Title} onError={e => { (e.target as HTMLImageElement).src = '/images/no-image.jpg'; }} />
               <div className="slide-overlay">
                 <div className="slide-title">{item.Title}</div>
@@ -397,8 +398,8 @@ export default function AdminDashboard() {
                   <div>
                     <span className="news-category">{item.Category}</span>
                     <h3 className="news-title">
-                      <a href={`/news/${item.Id}`} onClick={e => { e.preventDefault(); router.push(`/news/${item.Id}`); }}>
-                        {item.Title}
+                      <a href={`/user/news/${item.Id}?admin=1`} onClick={e => { e.preventDefault(); router.push(`/user/news/${item.Id}?admin=1`); }}>
+                      {item.Title}
                       </a>
                     </h3>
                     <p className="news-excerpt">{truncateText(item.Content, 180)}</p>
@@ -451,9 +452,9 @@ export default function AdminDashboard() {
               <h3 className="widget-title">⛰️ सर्वाधिक पाहिलेले</h3>
               {mostViewed.map((item, i) => (
                 <div key={i} className="widget-item">
-                  <a href={item.Url || `/news/${item.Id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <a href={`/user/news/${item.Id}?admin=1`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className="widget-item-title">{item.Title}</div>
-                    <div className="widget-item-meta">{item.SubTitle}</div>
+                      <div className="widget-item-meta">{item.SubTitle}</div>
                   </a>
                 </div>
               ))}
@@ -462,7 +463,7 @@ export default function AdminDashboard() {
               <h3 className="widget-title">🎭 सह्याद्रीचे शिलेदार</h3>
               {heroes.map((item, i) => (
                 <div key={i} className="widget-item">
-                  <a href={`/news/${item.Id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <a href={`/user/news/${item.Id}?admin=1`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className="widget-item-title">{item.Title}</div>
                     <div className="widget-item-meta">{item.SubTitle}</div>
                   </a>
@@ -473,7 +474,7 @@ export default function AdminDashboard() {
               <h3 className="widget-title">📰 विविध बातम्या</h3>
               {vividha.map((item, i) => (
                 <div key={i} className="widget-item">
-                  <a href={`/news/${item.Id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <a href={`/user/news/${item.Id}?admin=1`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className="widget-item-title">{item.Title}</div>
                     <div className="widget-item-meta">{item.SubTitle}</div>
                   </a>
@@ -557,6 +558,41 @@ export default function AdminDashboard() {
                   <option value="1440">24 तास</option>
                 </select>
               </div>
+
+              <div className="form-group" style={{ marginTop: '15px' }}>
+  <label style={{ 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '12px', 
+    cursor: 'pointer',
+    padding: '14px',
+    background: form.isHero ? '#fff3e0' : '#f8f9fa',
+    borderRadius: '10px',
+    border: form.isHero ? '2px solid #ff9800' : '2px solid #e0e0e0',
+    transition: 'all 0.3s'
+  }}>
+    <input 
+      type="checkbox" 
+      checked={form.isHero}
+      onChange={e => setForm({ ...form, isHero: e.target.checked })}
+      style={{ 
+        width: '22px', 
+        height: '22px', 
+        cursor: 'pointer',
+        accentColor: '#ff9800'
+      }}
+    />
+    <div style={{ flex: 1 }}>
+      <div style={{ fontWeight: 700, fontSize: '15px', color: form.isHero ? '#e65100' : '#333' }}>
+        🎭 सह्याद्रीचे शिलेदार
+      </div>
+      <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+        महत्वाच्या व्यक्तींशी संबंधित बातमी
+      </div>
+    </div>
+  </label>
+</div>
+
               <button type="submit" style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', marginTop: '6px' }}>
                 {editId ? '✔ अपडेट करा' : '✔ प्रकाशित करा'}
               </button>

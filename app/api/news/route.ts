@@ -66,6 +66,7 @@ export async function POST(req: Request) {
     const author = formData.get('author') as string;
     const date = formData.get('date') as string;
     const breakingDuration = formData.get('breakingDuration') as string;
+    const isHero = formData.get('isHero') as string; 
     const images = formData.getAll('images') as File[];
 
     if (!headline || !content || categoryId === '0' || !author) {
@@ -102,11 +103,12 @@ await db
   .input('publishDate', sql.DateTime, publishDateTime)
   .input('gallery', sql.NVarChar, JSON.stringify(galleryPaths))
   .input('breakingDuration', sql.Int, parseInt(breakingDuration))
+  .input('isHero', sql.Bit, isHero === '1')  // ← ADD THIS
   .query(`
     INSERT INTO NewsArticles 
-    (Title, Content, CategoryId, Author, PublishDate, Gallery, BreakingDurationMinutes, ViewCount)
+    (Title, Content, CategoryId, Author, PublishDate, Gallery, BreakingDurationMinutes, ViewCount, IsHero)
     VALUES 
-    (@title, @content, @categoryId, @author, @publishDate, @gallery, @breakingDuration, 0)
+    (@title, @content, @categoryId, @author, @publishDate, @gallery, @breakingDuration, 0, @isHero)
   `);
   
     return NextResponse.json({ status: 'OK', message: 'News published successfully!' });
@@ -126,6 +128,7 @@ export async function PUT(req: Request) {
     const author = formData.get('author') as string;
     const date = formData.get('date') as string;
     const breakingDuration = formData.get('breakingDuration') as string;
+
     const images = formData.getAll('images') as File[];
 
     if (!editId || !headline || !content || categoryId === '0' || !author) {
@@ -176,6 +179,7 @@ await db
   .input('publishDate', sql.DateTime, publishDateTime)
   .input('gallery', sql.NVarChar, JSON.stringify(galleryPaths))
   .input('breakingDuration', sql.Int, parseInt(breakingDuration))
+  .input('isHero', sql.Bit, isHero === '1')
       .query(`
         UPDATE NewsArticles 
         SET Title = @title,

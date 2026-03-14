@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getMarathiDate, formatMarathiDate } from '@/lib/utils';
 
@@ -23,15 +23,26 @@ export default function UserNewsDetailPage() {
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
 
-  useEffect(() => {
-    setMarathiDate(getMarathiDate());
-    if (id) fetchNews();
-  }, [id]);
+  const hasFetched = useRef(false);
+
+useEffect(() => {
+  setMarathiDate(getMarathiDate());
+  if (id && !hasFetched.current) {
+    fetchNews();
+    hasFetched.current = true;
+  }
+}, [id]);
 
   async function fetchNews() {
-    try {
-      const res = await fetch(`/api/news/${id}`);
-      const data = await res.json();
+  try {
+    // Check if admin parameter is in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const isAdmin = urlParams.has('admin');
+    
+    // Add admin param to API if coming from admin
+    const apiUrl = isAdmin ? `/api/news/${id}?admin=1` : `/api/news/${id}`;
+    const res = await fetch(apiUrl);
+    const data = await res.json();
       if (data.status === 'OK') {
         setNews(data.data);
         if (data.data.Gallery?.length > 0) {

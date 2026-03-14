@@ -1,38 +1,47 @@
 import { NextResponse } from 'next/server';
 import { getDB, sql } from '@/lib/db';
-import bcrypt from 'bcryptjs';
 import nodemailer from 'nodemailer';
-import { generateOTP, maskEmail } from '@/lib/utils';
-
-// In-memory OTP storage (production mein Redis use karo)
-const otpStore = new Map<string, { otp: string; expiry: number }>();
+import bcrypt from 'bcryptjs';
 
 export async function POST(req: Request) {
   try {
-    const { action, email, otp, newPassword } = await req.json();
+    const { step, email, otp, newPassword } = await req.json();
 
-    // Action 1: Send OTP
-    if (action === 'sendOTP') {
-      if (!email?.trim()) {
-        return NextResponse.json({ status: 'ERR', message: 'Email is required' });
+    const db = await getDB();
+
+    // Step 1: Send OTP
+    if (step === '1') {
+      if (!email) {
+        return NextResponse.json({ status: 'ERR', message: 'Email required' });
       }
 
-      const db = await getDB();
       const result = await db
         .request()
         .input('email', sql.NVarChar, email)
-        .query('SELECT Email FROM AdminUsers WHERE Email = @email');
+        .query('SELECT AdminId, FullName FROM AdminUsers WHERE Email = @email');
 
-      if (result.recordset.length === 0) {
-        return NextResponse.json({ status: 'ERR', message: 'Email not found in admin records' });
+      if (!result.recordset.length) {
+        return NextResponse.json({ status: 'ERR', message: 'Email not found' });
       }
 
-      // Generate OTP
-      const generatedOTP = generateOTP();
-      const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
-      otpStore.set(email, { otp: generatedOTP, expiry });
+      const user = result.recordset[0];
+      const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiry = new Date(Date.now() + 10 * 60 * 1000);
 
-      // Send email
+      // Store OTP in database
+      await db
+        .request()
+        .input('userId', sql.Int, user.AdminId)
+        .input('otp', sql.NVarChar, otpCode)
+        .input('expiry', sql.DateTime, expiry)
+        .query(`
+          IF EXISTS (SELECT 1 FROM PasswordResetOTP WHERE UserId = @userId)
+            UPDATE PasswordResetOTP SET OTP = @otp, ExpiryTime = @expiry WHERE UserId = @userId
+          ELSE
+            INSERT INTO PasswordResetOTP (UserId, OTP, ExpiryTime) VALUES (@userId, @otp, @expiry)
+        `);
+
+      // Send OTP email
       const transporter = nodemailer.createTransport({
         host: process.env.SMTP_HOST,
         port: Number(process.env.SMTP_PORT),
@@ -43,93 +52,131 @@ export async function POST(req: Request) {
         },
       });
 
+      // Send OTP to user
       await transporter.sendMail({
         from: `"महासह्याद्री Admin" <${process.env.FROM_EMAIL}>`,
         to: email,
         subject: 'Password Reset OTP - महासह्याद्री',
         html: `
-          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-            <div style="background:linear-gradient(135deg,#1e88e5 0%,#64b5f6 100%);padding:30px;text-align:center;border-radius:10px 10px 0 0;">
-              <h1 style="color:white;margin:0;font-size:28px;">🔐 Password Reset</h1>
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #27A4F3;">Password Reset Request</h2>
+            <p>Hello ${user.FullName || 'Admin'},</p>
+            <p>Your OTP for password reset is:</p>
+            <div style="background: #f5f5f5; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; color: #27A4F3; border-radius: 8px; margin: 20px 0;">
+              ${otpCode}
             </div>
-            <div style="background:#f9f9f9;padding:30px;border-radius:0 0 10px 10px;">
-              <p style="font-size:16px;color:#333;">Your OTP for password reset is:</p>
-              <div style="background:white;border:2px dashed #1e88e5;padding:20px;text-align:center;margin:20px 0;border-radius:8px;">
-                <span style="font-size:36px;font-weight:bold;color:#1e88e5;letter-spacing:8px;">${generatedOTP}</span>
-              </div>
-              <p style="color:#666;font-size:14px;">This OTP is valid for <strong>10 minutes</strong>.</p>
-              <p style="color:#666;font-size:14px;">If you didn't request this, please ignore this email.</p>
-            </div>
+            <p>This OTP is valid for 10 minutes.</p>
+            <p style="color: #666; font-size: 12px;">If you did not request this, please ignore this email.</p>
           </div>
         `,
       });
 
-      return NextResponse.json({
-        status: 'OK',
-        message: `OTP sent successfully to ${maskEmail(email)}. Please check your email.`,
-      });
+      // Send notification to admin (rudan.kapade@gmail.com)
+      try {
+        await transporter.sendMail({
+          from: `"महासह्याद्री System" <${process.env.FROM_EMAIL}>`,
+          to: process.env.ADMIN_EMAIL || 'rudan.kapade@gmail.com',
+          subject: '🔐 Password Reset Request Alert',
+          html: `
+            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <h2 style="color: #ff9800;">🔐 Password Reset Request</h2>
+              <p><strong>User:</strong> ${user.FullName || 'N/A'}</p>
+              <p><strong>Email:</strong> ${email}</p>
+              <p><strong>OTP Generated:</strong> ${otpCode}</p>
+              <p><strong>Time:</strong> ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+              <p><strong>Valid Until:</strong> ${expiry.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}</p>
+              <p style="color: #666; font-size: 12px; margin-top: 20px;">This is an automated alert from महासह्याद्री Admin System.</p>
+            </div>
+          `,
+        });
+      } catch (emailErr) {
+        console.error('Admin notification error:', emailErr);
+        // Continue even if admin email fails
+      }
+
+      return NextResponse.json({ status: 'OK', message: 'OTP sent to your email' });
     }
 
-    // Action 2: Verify OTP
-    if (action === 'verifyOTP') {
+    // Step 2: Verify OTP
+    if (step === '2') {
       if (!email || !otp) {
-        return NextResponse.json({ status: 'ERR', message: 'Email and OTP are required' });
+        return NextResponse.json({ status: 'ERR', message: 'Email and OTP required' });
       }
 
-      const stored = otpStore.get(email);
-      if (!stored) {
-        return NextResponse.json({ status: 'ERR', message: 'OTP not found or expired' });
+      const result = await db
+        .request()
+        .input('email', sql.NVarChar, email)
+        .query('SELECT AdminId FROM AdminUsers WHERE Email = @email');
+
+      if (!result.recordset.length) {
+        return NextResponse.json({ status: 'ERR', message: 'Email not found' });
       }
 
-      if (Date.now() > stored.expiry) {
-        otpStore.delete(email);
-        return NextResponse.json({ status: 'ERR', message: 'OTP expired. Please request a new one.' });
+      const userId = result.recordset[0].AdminId;
+
+      const otpResult = await db
+        .request()
+        .input('userId', sql.Int, userId)
+        .input('otp', sql.NVarChar, otp)
+        .query('SELECT * FROM PasswordResetOTP WHERE UserId = @userId AND OTP = @otp AND ExpiryTime > GETDATE()');
+
+      if (!otpResult.recordset.length) {
+        return NextResponse.json({ status: 'ERR', message: 'Invalid or expired OTP' });
       }
 
-      if (stored.otp !== otp.trim()) {
-        return NextResponse.json({ status: 'ERR', message: 'Invalid OTP. Please try again.' });
-      }
-
-      return NextResponse.json({ status: 'OK', message: 'OTP verified successfully!' });
+      return NextResponse.json({ status: 'OK', message: 'OTP verified' });
     }
 
-    // Action 3: Reset Password
-    if (action === 'resetPassword') {
-      if (!email || !newPassword) {
-        return NextResponse.json({ status: 'ERR', message: 'Email and new password are required' });
+    // Step 3: Reset Password
+    if (step === '3') {
+      if (!email || !otp || !newPassword) {
+        return NextResponse.json({ status: 'ERR', message: 'All fields required' });
       }
 
-      const stored = otpStore.get(email);
-      if (!stored) {
-        return NextResponse.json({ status: 'ERR', message: 'Session expired. Please start over.' });
+      const result = await db
+        .request()
+        .input('email', sql.NVarChar, email)
+        .query('SELECT AdminId FROM AdminUsers WHERE Email = @email');
+
+      if (!result.recordset.length) {
+        return NextResponse.json({ status: 'ERR', message: 'Email not found' });
+      }
+
+      const userId = result.recordset[0].AdminId;
+
+      // Verify OTP again
+      const otpResult = await db
+        .request()
+        .input('userId', sql.Int, userId)
+        .input('otp', sql.NVarChar, otp)
+        .query('SELECT * FROM PasswordResetOTP WHERE UserId = @userId AND OTP = @otp AND ExpiryTime > GETDATE()');
+
+      if (!otpResult.recordset.length) {
+        return NextResponse.json({ status: 'ERR', message: 'Invalid or expired OTP' });
       }
 
       // Hash new password
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-      // Update database
-      const db = await getDB();
+      // Update password
       await db
         .request()
-        .input('email', sql.NVarChar, email)
+        .input('userId', sql.Int, userId)
         .input('password', sql.NVarChar, hashedPassword)
-        .query('UPDATE AdminUsers SET PasswordHash = @password WHERE Email = @email');
+        .query('UPDATE AdminUsers SET PasswordHash = @password WHERE AdminId = @userId');
 
-      // Clear OTP
-      otpStore.delete(email);
+      // Delete used OTP
+      await db
+        .request()
+        .input('userId', sql.Int, userId)
+        .query('DELETE FROM PasswordResetOTP WHERE UserId = @userId');
 
-      return NextResponse.json({
-        status: 'OK',
-        message: 'Password reset successfully! Redirecting to login...',
-      });
+      return NextResponse.json({ status: 'OK', message: 'Password reset successful' });
     }
 
-    return NextResponse.json({ status: 'ERR', message: 'Invalid action' });
-  } catch (error: any) {
-    console.error('Forgot password error:', error);
-    return NextResponse.json({
-      status: 'ERR',
-      message: 'Server error: ' + error.message,
-    });
+    return NextResponse.json({ status: 'ERR', message: 'Invalid step' });
+  } catch (e: any) {
+    console.error('Forgot password error:', e);
+    return NextResponse.json({ status: 'ERR', message: e.message });
   }
 }
