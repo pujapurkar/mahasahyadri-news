@@ -15,13 +15,13 @@ export function verifyToken(token: string): any {
   }
 }
 
-export function getTokenFromCookies(): string | null {
-  const cookieStore = cookies();
+export async function getTokenFromCookies(): Promise<string | null> {
+  const cookieStore = await cookies();
   return cookieStore.get('admin_token')?.value || null;
 }
 
-export function isAdminAuthenticated(): boolean {
-  const token = getTokenFromCookies();
+export async function isAdminAuthenticated(): Promise<boolean> {
+  const token = await getTokenFromCookies();
   if (!token) return false;
   const decoded = verifyToken(token);
   return decoded !== null;

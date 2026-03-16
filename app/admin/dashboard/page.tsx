@@ -326,7 +326,7 @@ export default function AdminDashboard() {
         <div className="hero-slider">
           {sliderNews.map((item, i) => (
             <div key={item.Id} className={`slide ${i === currentSlide ? 'active' : ''}`}
-              onClick={() => router.push(`/user/news/${item.Id}?admin=1`)} style={{ cursor: 'pointer' }}>
+              onClick={() => router.push(`/admin/news/${item.Id}?admin=1`)} style={{ cursor: 'pointer' }}>
               <img src={item.HeroImage} alt={item.Title} onError={e => { (e.target as HTMLImageElement).src = '/images/no-image.jpg'; }} />
               <div className="slide-overlay">
                 <div className="slide-title">{item.Title}</div>
@@ -398,7 +398,7 @@ export default function AdminDashboard() {
                   <div>
                     <span className="news-category">{item.Category}</span>
                     <h3 className="news-title">
-                      <a href={`/user/news/${item.Id}?admin=1`} onClick={e => { e.preventDefault(); router.push(`/user/news/${item.Id}?admin=1`); }}>
+                      <a href={`/admin/news/${item.Id}?admin=1`} onClick={e => { e.preventDefault(); router.push(`/admin/news/${item.Id}?admin=1`); }}>
                       {item.Title}
                       </a>
                     </h3>
@@ -452,7 +452,7 @@ export default function AdminDashboard() {
               <h3 className="widget-title">⛰️ सर्वाधिक पाहिलेले</h3>
               {mostViewed.map((item, i) => (
                 <div key={i} className="widget-item">
-                  <a href={`/user/news/${item.Id}?admin=1`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <a href={item.Url || `/user/news/${item.Id}?admin=1`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div className="widget-item-title">{item.Title}</div>
                       <div className="widget-item-meta">{item.SubTitle}</div>
                   </a>

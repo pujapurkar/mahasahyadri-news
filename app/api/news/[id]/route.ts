@@ -10,15 +10,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     
     // Check if request is from admin or user
     const url = new URL(req.url);
-    const isAdminView = url.searchParams.has('admin');
+    const isAdminView = url.searchParams.get('admin') === '1';
     
     // Increment view count ONLY for user side
     if (!isAdminView) {
       await db
-        .request()
-        .input('id', sql.Int, parseInt(id))
-        .query('UPDATE NewsArticles SET ViewCount = ViewCount + 1 WHERE Id = @id');
-    }
+    .request()
+    .input('id', sql.Int, parseInt(id))
+    .query('UPDATE NewsArticles SET ViewCount = ViewCount + 1 WHERE Id = @id');
+  }
     
     // Get news details
     const result = await db
