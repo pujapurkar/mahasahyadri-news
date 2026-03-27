@@ -20,7 +20,7 @@ export async function GET(req: Request) {
           C.CommentId,
           C.Content,
           C.CommentDate,
-          ISNULL(U.FullName, N'Admin') AS FullName
+          ISNULL(U.FullName, N'प्रशासक') AS FullName
         FROM Comments C
         LEFT JOIN PublicUsers U ON C.UserId = U.UserId
         WHERE C.NewsId = @nid
@@ -40,12 +40,13 @@ export async function GET(req: Request) {
   }
 }
 
-// POST - Add comment (Admin comment)
+// POST - Add comment (Admin or User)
 export async function POST(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const newsId = searchParams.get('newsId');
     const commentText = searchParams.get('commentText');
+    const userName = searchParams.get('userName'); // ← NEW: Get userName parameter
 
     if (!newsId || !commentText?.trim()) {
       return NextResponse.json({ status: 'ERR', message: 'newsId and commentText required' });
@@ -63,14 +64,41 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'ERR', message: 'News article not found' });
     }
 
-    // Insert admin comment (UserId = NULL means Admin)
+    // If userName is provided (user comment), create/get user
+    let userId = null;
+    if (userName && userName.trim()) {
+      // Check if user already exists
+      const userCheck = await db
+        .request()
+        .input('fullName', sql.NVarChar(100), userName.trim())
+        .query('SELECT UserId FROM PublicUsers WHERE FullName = @fullName');
+
+      if (userCheck.recordset.length > 0) {
+        // User exists
+        userId = userCheck.recordset[0].UserId;
+      } else {
+        // Create new user
+        const userInsert = await db
+          .request()
+          .input('fullName', sql.NVarChar(100), userName.trim())
+          .query(`
+            INSERT INTO PublicUsers (FullName, Email)
+            OUTPUT INSERTED.UserId
+            VALUES (@fullName, '')
+          `)
+        userId = userInsert.recordset[0].UserId;
+      }
+    }
+
+    // Insert comment (UserId = NULL for Admin, otherwise User ID)
     await db
       .request()
       .input('Content', sql.NVarChar(sql.MAX), commentText.trim())
       .input('NewsId', sql.Int, parseInt(newsId))
+      .input('UserId', sql.Int, userId)
       .query(`
         INSERT INTO Comments (Content, CommentDate, UserId, NewsId)
-        VALUES (@Content, GETDATE(), NULL, @NewsId)
+        VALUES (@Content, GETDATE(), @UserId, @NewsId)
       `);
 
     return NextResponse.json({ status: 'OK', message: 'Comment saved successfully' });

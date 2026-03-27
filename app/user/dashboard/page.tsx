@@ -31,6 +31,12 @@ export default function UserDashboard() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const tickerRef = useRef<HTMLDivElement>(null);
   const sliderIntervalRef = useRef<any>(null);
+  const [commentsModal, setCommentsModal] = useState(false);
+  const [currentNewsId, setCurrentNewsId] = useState<number | null>(null);
+  const [currentNewsTitle, setCurrentNewsTitle] = useState('');
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState('');
+  
 
   // ---- Load all data ----
   useEffect(() => {
@@ -38,6 +44,14 @@ export default function UserDashboard() {
     fetchAllData('सर्व बातम्या');
     const el = document.getElementById('footerYear');
     if (el) el.textContent = toMarathiDigits(new Date().getFullYear().toString());
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/news')
+      .then(res => res.json())
+      .then(d => {
+        if (d.status === 'OK') setNews(d.data);
+      });
   }, []);
 
   async function fetchAllData(cat: string) {
@@ -93,6 +107,65 @@ export default function UserDashboard() {
   function filterCategory(cat: string) {
     setActiveCategory(cat);
     fetch(`/api/news?category=${encodeURIComponent(cat)}`).then(r => r.json()).then(d => { if (d.status === 'OK') setNews(d.data); });
+  }
+
+ async function openComments(id: number, title: string) {
+    setCurrentNewsId(id); setCurrentNewsTitle(title); setCommentsModal(true);
+    const res = await fetch(`/api/comments?newsId=${id}`);
+    const d = await res.json();
+    if (d.status === 'OK') setComments(d.comments);
+  }
+
+ async function submitComment() {
+  if (!newComment.trim()) { 
+    alert('कृपया तुमची प्रतिक्रिया लिहा.'); 
+    return; 
+  }
+  
+  try {
+    const userName = 'वाचक';
+    const res = await fetch(
+      `/api/comments?newsId=${currentNewsId}&commentText=${encodeURIComponent(newComment)}&userName=${encodeURIComponent(userName)}`, 
+      { method: 'POST' }
+    );
+    const d = await res.json();
+    
+    console.log('Submit response:', d); // Debug log
+    
+    if (d.status === 'OK') {
+      alert('प्रतिक्रिया यशस्वीरित्या जोडली!'); // Success alert
+      setNewComment('');
+      
+      // Refresh comments
+      const r = await fetch(`/api/comments?newsId=${currentNewsId}`);
+      const rd = await r.json();
+      
+      console.log('Refresh response:', rd); // Debug log
+      
+      if (rd.status === 'OK') {
+        setComments(rd.comments);
+      }
+    } else {
+      alert('त्रुटी: ' + d.message);
+    }
+  } catch (error) {
+    console.error('Comment submit error:', error);
+    alert('प्रतिक्रिया जोडताना त्रुटी झाली!');
+  }
+}
+   async function deleteComment(cid: number) {
+    if (!confirm('ही प्रतिक्रिया delete करायची खात्री आहे का?')) return;
+    await fetch(`/api/comments?commentId=${cid}`, { method: 'DELETE' });
+    const r = await fetch(`/api/comments?newsId=${currentNewsId}`);
+    const d = await r.json();
+    if (d.status === 'OK') setComments(d.comments);
+  }
+
+  function shareNews(e: React.MouseEvent, id: number) {
+    e.preventDefault(); e.stopPropagation();
+    const url = `${window.location.origin}/news/${id}`;
+    if (navigator.share) { navigator.share({ title: '📰 महासह्याद्री', url }).catch(() => {}); }
+    else { navigator.clipboard.writeText(url); alert('लिंक कॉपी झाली!\n' + url); }
   }
 
   const categoryList = ['सर्व बातम्या', 'किल्ले', 'घाटवाटा', 'मंदिरे', 'वनसंपदा', 'पशुपक्षी', 'विविध'];
@@ -262,12 +335,15 @@ export default function UserDashboard() {
                     <span>•</span>
                     <span>👤 {item.Author}</span>
                     <span>•</span>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#27A4F3" strokeWidth="2">
-                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                      </svg>
-                      {toMarathiDigits(item.CommentCount)}
-                    </span>
+                   <span 
+  style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+  onClick={(e) => {
+    e.stopPropagation();   // 🚀 MOST IMPORTANT
+    openComments(item.Id, item.Title);
+  }}
+>
+  💬 {item.CommentCount}
+</span>
                   </div>
                 </div>
               </div>
@@ -329,6 +405,40 @@ export default function UserDashboard() {
           </div>
         </div>
       </div>
+
+       {/* Comments Modal */}
+      {commentsModal && (
+        <div style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }} onClick={() => setCommentsModal(false)}>
+          <div style={{ background: '#fff', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: 600 }}>प्रतिक्रिया</div>
+                <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>{currentNewsTitle}</div>
+              </div>
+              <button onClick={() => setCommentsModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+            </div>
+            <div style={{ padding: '12px 16px', overflowY: 'auto', flex: 1 }}>
+              {comments.length === 0 ? (
+                <div style={{ color: '#777' }}>अजून कोणतीही प्रतिक्रिया नाही.</div>
+              ) : (
+                comments.map((c: any) => (
+                  <div key={c.CommentId} style={{ marginBottom: '10px', padding: '8px', background: '#f9f9f9', borderRadius: '6px', position: 'relative' }}>
+                    <strong>{c.User}</strong>
+                    {c.User === 'Admin' && <span style={{ background: '#27A4F3', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>Admin</span>}
+                    <div style={{ marginTop: '4px' }}>{c.Text}</div>
+                    <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>{c.Date}</div>
+                    <button onClick={() => deleteComment(c.CommentId)} style={{ position: 'absolute', top: '8px', right: '8px', border: 'none', background: '#ffebee', color: '#e53935', fontSize: '11px', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>🗑 Delete</button>
+                  </div>
+                ))
+              )}
+            </div>
+            <div style={{ borderTop: '1px solid #eee', padding: '10px 12px', display: 'flex', gap: '8px' }}>
+              <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="तुमची प्रतिक्रिया लिहा..." style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: '1px solid #ddd', fontFamily: 'inherit', fontSize: '13px' }} />
+              <button onClick={submitComment} style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>पाठवा</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
