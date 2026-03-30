@@ -102,9 +102,9 @@ export async function POST(req: Request) {
           .request()
           .input('fullName', sql.NVarChar(100), userName.trim())
           .query(`
-            INSERT INTO PublicUsers (FullName, Email, JoinedDate)
+            INSERT INTO PublicUsers (FullName, Email, JoinedDate, IsActive)
             OUTPUT INSERTED.UserId
-            VALUES (@fullName, '', GETDATE())
+            VALUES (@fullName, NULL, GETDATE(), 1)
           `);
         userId = userInsert.recordset[0].UserId;
       }
