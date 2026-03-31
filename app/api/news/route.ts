@@ -12,24 +12,25 @@ export async function GET(req: Request) {
 
     const db = await getDB();
     let query = `
-      SELECT 
-        NA.Id,
-        NA.Title,
-        NA.Content,
-        NA.Author,
-        NA.PublishDate,
-        NA.Gallery,
-        C.CategoryName AS Category,
-        (SELECT COUNT(*) FROM Comments WHERE NewsId = NA.Id) AS CommentCount
-      FROM NewsArticles NA
-      LEFT JOIN Categories C ON NA.CategoryId = C.CategoryId
-    `;
+  SELECT 
+    NA.Id,
+    NA.Title,
+    NA.Content,
+    NA.Author,
+    NA.PublishDate,
+    NA.Gallery,
+    C.CategoryName AS Category,
+    (SELECT COUNT(*) FROM Comments WHERE NewsId = NA.Id) AS CommentCount
+  FROM NewsArticles NA
+  LEFT JOIN Categories C ON NA.CategoryId = C.CategoryId
+  WHERE NA.PublishDate <= GETDATE()
+`;
 
     if (category !== 'सर्व बातम्या') {
-      query += ` WHERE C.CategoryName = @category`;
-    }
+  query += ` AND C.CategoryName = @category`;
+}
 
-    query += ` ORDER BY NA.PublishDate DESC`;
+   query += ` ORDER BY NA.PublishDate DESC`;
 
     const request = db.request();
     if (category !== 'सर्व बातम्या') {
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
     const categoryId = formData.get('categoryId') as string;
     const author = formData.get('author') as string;
     const date = formData.get('date') as string;
-    const breakingDuration = formData.get('breakingDuration') as string;
+    const breakingEnd = formData.get('breakingEnd') as string;
     const isHero = formData.get('isHero') as string;
     const images = formData.getAll('images') as File[];
 
@@ -91,8 +92,17 @@ export async function POST(req: Request) {
     }
 
     // Always use current datetime
-    const publishDateTime = new Date();
+  const publishDateTime = new Date(date);
 
+  publishDateTime.setMinutes(
+  publishDateTime.getMinutes() - publishDateTime.getTimezoneOffset()
+);
+
+const breakingEndDate = new Date(breakingEnd);
+
+breakingEndDate.setMinutes(
+  breakingEndDate.getMinutes() - breakingEndDate.getTimezoneOffset()
+);
     // Insert into database
     const db = await getDB();
     await db
@@ -103,13 +113,13 @@ export async function POST(req: Request) {
       .input('author', sql.NVarChar, author)
       .input('publishDate', sql.DateTime, publishDateTime)
       .input('gallery', sql.NVarChar, JSON.stringify(galleryPaths))
-      .input('breakingDuration', sql.Int, parseInt(breakingDuration))
+     .input('breakingEndDate', sql.DateTime, breakingEndDate)
       .input('isHero', sql.Bit, isHero === '1')
       .query(`
         INSERT INTO NewsArticles 
-        (Title, Content, CategoryId, Author, PublishDate, Gallery, BreakingDurationMinutes, ViewCount, IsHero)
-        VALUES 
-        (@title, @content, @categoryId, @author, @publishDate, @gallery, @breakingDuration, 0, @isHero)
+(Title, Content, CategoryId, Author, PublishDate, Gallery, BreakingEndDate, ViewCount, IsHero)
+VALUES 
+(@title, @content, @categoryId, @author, @publishDate, @gallery, @breakingEndDate, 0, @isHero)
       `);
 
     return NextResponse.json({ status: 'OK', message: 'News published successfully!' });
@@ -129,7 +139,6 @@ export async function PUT(req: Request) {
     const categoryId = formData.get('categoryId') as string;
     const author = formData.get('author') as string;
     const date = formData.get('date') as string;
-    const breakingDuration = formData.get('breakingDuration') as string;
     const isHero = formData.get('isHero') as string;
     const images = formData.getAll('images') as File[];
 
@@ -169,8 +178,18 @@ export async function PUT(req: Request) {
     }
 
     // Always use current datetime for updates
-    const publishDateTime = new Date();
+  const publishDateTime = new Date(date);
+  publishDateTime.setMinutes(
+  publishDateTime.getMinutes() - publishDateTime.getTimezoneOffset()
+);
 
+const breakingEnd = formData.get('breakingEnd') as string;
+
+const breakingEndDate = new Date(breakingEnd);
+
+breakingEndDate.setMinutes(
+  breakingEndDate.getMinutes() - breakingEndDate.getTimezoneOffset()
+);
     // Update database
     await db
       .request()
@@ -181,7 +200,7 @@ export async function PUT(req: Request) {
       .input('author', sql.NVarChar, author)
       .input('publishDate', sql.DateTime, publishDateTime)
       .input('gallery', sql.NVarChar, JSON.stringify(galleryPaths))
-      .input('breakingDuration', sql.Int, parseInt(breakingDuration))
+      .input('breakingEndDate', sql.DateTime, breakingEndDate)
       .input('isHero', sql.Bit, isHero === '1')
       .query(`
         UPDATE NewsArticles 
@@ -191,7 +210,7 @@ export async function PUT(req: Request) {
             Author = @author,
             PublishDate = @publishDate,
             Gallery = @gallery,
-            BreakingDurationMinutes = @breakingDuration,
+            BreakingEndDate = @breakingEndDate,
             IsHero = @isHero
         WHERE Id = @id
       `);

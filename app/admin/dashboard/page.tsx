@@ -30,7 +30,7 @@ export default function AdminDashboard() {
   const [vividha, setVividha] = useState<WidgetItem[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
-  const [form, setForm] = useState({ headline: '', content: '', categoryId: '0', author: '', date: '', breakingDuration: '60' , isHero: false });
+  const [form, setForm] = useState({ headline: '', content: '', categoryId: '0', author: '', date: '', breakingEnd: '', isHero: false });
   const [formMsg, setFormMsg] = useState({ text: '', color: 'green' });
   const [images, setImages] = useState<File[]>([]);
   const [previews, setPreviews] = useState<string[]>([]);
@@ -39,8 +39,6 @@ export default function AdminDashboard() {
   const [currentNewsTitle, setCurrentNewsTitle] = useState('');
   const [comments, setComments] = useState<any[]>([]);
   const [newComment, setNewComment] = useState('');
-  const [replyTo, setReplyTo] = useState<number | null>(null); // Track which comment is being replied to
-  const [replyText, setReplyText] = useState(''); // Reply text
   const [currentSlide, setCurrentSlide] = useState(0);
   const tickerRef = useRef<HTMLDivElement>(null);
   const sliderIntervalRef = useRef<any>(null);
@@ -122,12 +120,14 @@ export default function AdminDashboard() {
     const d = await res.json();
       if (d.status === 'OK') {
         const n = d.data;
-        setForm({ headline: n.Title, content: n.Content, categoryId: String(n.CategoryId), author: n.Author, date: n.PublishDate?.split('T')[0] || '', breakingDuration: String(n.BreakingDurationMinutes || 60) , isHero: n.IsHero || false });
+        setForm({ headline: n.Title, content: n.Content, categoryId: String(n.CategoryId), author: n.Author, date: n.PublishDate?.split('T')[0] || '', breakingEnd: n.BreakingEndDate 
+  ? new Date(n.BreakingEndDate).toISOString().slice(0,16)
+  : '' , isHero: n.IsHero || false });
         if (n.Gallery?.length) setFormMsg({ text: 'नोट: सध्याच्या प्रतिमा बदलण्यासाठी नवीन प्रतिमा निवडा', color: 'blue' });
       }
     } else {
       setEditId(null);
-      setForm({ headline: '', content: '', categoryId: '0', author: '', date: new Date().toISOString().split('T')[0], breakingDuration: '60', isHero: false });
+      setForm({ headline: '', content: '', categoryId: '0', author: '', date: new Date().toISOString().split('T')[0], breakingEnd: '', isHero: false });
     }
     setModalOpen(true);
   }
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
     fd.append('categoryId', form.categoryId);
     fd.append('author', form.author);
     fd.append('date', form.date);
-    fd.append('breakingDuration', form.breakingDuration);
+    fd.append('breakingEnd', form.breakingEnd);
     fd.append('isHero', form.isHero ? '1' : '0');
     if (editId) fd.append('editId', String(editId));
     images.forEach(img => fd.append('images', img));
@@ -184,29 +184,16 @@ export default function AdminDashboard() {
   }
 
   async function submitComment() {
-  if (!newComment.trim()) { alert('कृपया तुमची प्रतिक्रिया लिहा.'); return; }
-  const res = await fetch(`/api/comments?newsId=${currentNewsId}&commentText=${encodeURIComponent(newComment)}`, { method: 'POST' });
-  const d = await res.json();
-  if (d.status === 'OK') {
-    setNewComment('');
-    const r = await fetch(`/api/comments?newsId=${currentNewsId}`);
-    const rd = await r.json();
-    if (rd.status === 'OK') setComments(rd.comments);
+    if (!newComment.trim()) { alert('कृपया तुमची प्रतिक्रिया लिहा.'); return; }
+    const res = await fetch(`/api/comments?newsId=${currentNewsId}&commentText=${encodeURIComponent(newComment)}`, { method: 'POST' });
+    const d = await res.json();
+    if (d.status === 'OK') {
+      setNewComment('');
+      const r = await fetch(`/api/comments?newsId=${currentNewsId}`);
+      const rd = await r.json();
+      if (rd.status === 'OK') setComments(rd.comments);
+    }
   }
-}
-
-async function submitReply(parentId: number) {
-  if (!replyText.trim()) { alert('कृपया तुमचे उत्तर लिहा.'); return; }
-  const res = await fetch(`/api/comments?newsId=${currentNewsId}&commentText=${encodeURIComponent(replyText)}&parentId=${parentId}`, { method: 'POST' });
-  const d = await res.json();
-  if (d.status === 'OK') {
-    setReplyText('');
-    setReplyTo(null);
-    const r = await fetch(`/api/comments?newsId=${currentNewsId}`);
-    const rd = await r.json();
-    if (rd.status === 'OK') setComments(rd.comments);
-  }
-}
 
   async function deleteComment(cid: number) {
     if (!confirm('ही प्रतिक्रिया delete करायची खात्री आहे का?')) return;
@@ -560,19 +547,17 @@ async function submitReply(parentId: number) {
               </div>
               <div className="form-group">
                 <label className="form-label">प्रकाशन दिनांक</label>
-                <input type="date" className="form-control" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
+                <input type="datetime-local" className="form-control" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
               </div>
               <div className="form-group">
-                <label className="form-label">ब्रेकिंग न्यूज कालावधी</label>
-                <select className="form-control" value={form.breakingDuration} onChange={e => setForm({ ...form, breakingDuration: e.target.value })}>
-                  <option value="0">नाही</option>
-                  <option value="60">1 तास</option>
-                  <option value="180">3 तास</option>
-                  <option value="360">6 तास</option>
-                  <option value="720">12 तास</option>
-                  <option value="1440">24 तास</option>
-                </select>
-              </div>
+  <label className="form-label">ब्रेकिंग समाप्त दिनांक/वेळ</label>
+  <input
+    type="datetime-local"
+    className="form-control"
+    value={form.breakingEnd}
+    onChange={e => setForm({ ...form, breakingEnd: e.target.value })}
+  />
+</div>
 
               <div className="form-group" style={{ marginTop: '15px' }}>
   <label style={{ 
@@ -617,109 +602,38 @@ async function submitReply(parentId: number) {
       </div>
 
       {/* Comments Modal */}
-{commentsModal && (
-  <div style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }} onClick={() => setCommentsModal(false)}>
-    <div style={{ background: '#fff', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <div style={{ fontWeight: 600 }}>प्रतिक्रिया</div>
-          <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>{currentNewsTitle}</div>
-        </div>
-        <button onClick={() => setCommentsModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '20px', cursor: 'pointer' }}>✕</button>
-      </div>
-      
-      <div style={{ padding: '12px 16px', overflowY: 'auto', flex: 1 }}>
-        {comments.length === 0 ? (
-          <div style={{ color: '#777' }}>अजून कोणतीही प्रतिक्रिया नाही.</div>
-        ) : (
-          comments.map((c: any) => (
-            <div key={c.CommentId}>
-              {/* Main Comment */}
-              <div style={{ marginBottom: '10px', padding: '8px', background: '#f9f9f9', borderRadius: '6px', position: 'relative' }}>
-                <strong>{c.User}</strong>
-                {c.User === 'Admin' && <span style={{ background: '#27A4F3', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>Admin</span>}
-                <div style={{ marginTop: '4px' }}>{c.Text}</div>
-                <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>{c.Date}</div>
-                
-                {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
-                  <button 
-                    onClick={() => setReplyTo(replyTo === c.CommentId ? null : c.CommentId)} 
-                    style={{ border: 'none', background: '#e3f2fd', color: '#1976d2', fontSize: '11px', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer' }}
-                  >
-                    💬 उत्तर द्या
-                  </button>
-                  <button 
-                    onClick={() => deleteComment(c.CommentId)} 
-                    style={{ border: 'none', background: '#ffebee', color: '#e53935', fontSize: '11px', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}
-                  >
-                    🗑 हटवा
-                  </button>
-                </div>
-
-                {/* Reply Input Box */}
-                {replyTo === c.CommentId && (
-                  <div style={{ marginTop: '10px', display: 'flex', gap: '6px' }}>
-                    <input 
-                      type="text" 
-                      value={replyText} 
-                      onChange={e => setReplyText(e.target.value)} 
-                      placeholder="Admin उत्तर लिहा..." 
-                      style={{ flex: 1, padding: '6px 8px', borderRadius: '12px', border: '1px solid #ddd', fontSize: '12px' }} 
-                    />
-                    <button 
-                      onClick={() => submitReply(c.CommentId)} 
-                      style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '6px 12px', borderRadius: '12px', cursor: 'pointer', fontSize: '12px' }}
-                    >
-                      पाठवा
-                    </button>
-                  </div>
-                )}
+      {commentsModal && (
+        <div style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }} onClick={() => setCommentsModal(false)}>
+          <div style={{ background: '#fff', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <div style={{ fontWeight: 600 }}>प्रतिक्रिया</div>
+                <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>{currentNewsTitle}</div>
               </div>
-
-              {/* Nested Replies */}
-              {c.Replies && c.Replies.length > 0 && (
-                <div style={{ marginLeft: '30px', marginBottom: '10px' }}>
-                  {c.Replies.map((reply: any) => (
-                    <div key={reply.CommentId} style={{ marginBottom: '8px', padding: '6px', background: '#fff', border: '1px solid #e0e0e0', borderRadius: '6px', position: 'relative' }}>
-                      <strong>{reply.User}</strong>
-                      {reply.User === 'Admin' && <span style={{ background: '#27A4F3', color: '#fff', fontSize: '9px', padding: '2px 4px', borderRadius: '3px', marginLeft: '4px' }}>Admin</span>}
-                      <div style={{ marginTop: '3px', fontSize: '12px' }}>{reply.Text}</div>
-                      <div style={{ fontSize: '10px', color: '#888', marginTop: '3px' }}>{reply.Date}</div>
-                      <button 
-                        onClick={() => deleteComment(reply.CommentId)} 
-                        style={{ position: 'absolute', top: '6px', right: '6px', border: 'none', background: '#ffebee', color: '#e53935', fontSize: '10px', padding: '3px 6px', borderRadius: '3px', cursor: 'pointer' }}
-                      >
-                        🗑
-                      </button>
-                    </div>
-                  ))}
-                </div>
+              <button onClick={() => setCommentsModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+            </div>
+            <div style={{ padding: '12px 16px', overflowY: 'auto', flex: 1 }}>
+              {comments.length === 0 ? (
+                <div style={{ color: '#777' }}>अजून कोणतीही प्रतिक्रिया नाही.</div>
+              ) : (
+                comments.map((c: any) => (
+                  <div key={c.CommentId} style={{ marginBottom: '10px', padding: '8px', background: '#f9f9f9', borderRadius: '6px', position: 'relative' }}>
+                    <strong>{c.User}</strong>
+                    {c.User === 'Admin' && <span style={{ background: '#27A4F3', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>Admin</span>}
+                    <div style={{ marginTop: '4px' }}>{c.Text}</div>
+                    <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>{c.Date}</div>
+                    <button onClick={() => deleteComment(c.CommentId)} style={{ position: 'absolute', top: '8px', right: '8px', border: 'none', background: '#ffebee', color: '#e53935', fontSize: '11px', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>🗑 Delete</button>
+                  </div>
+                ))
               )}
             </div>
-          ))
-        )}
-      </div>
-
-      {/* Main Comment Input */}
-      <div style={{ borderTop: '1px solid #eee', padding: '10px 12px', display: 'flex', gap: '8px' }}>
-        <input 
-          type="text" 
-          value={newComment} 
-          onChange={e => setNewComment(e.target.value)} 
-          placeholder="Admin प्रतिक्रिया लिहा..." 
-          style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: '1px solid #ddd', fontFamily: 'inherit', fontSize: '13px' }} 
-        />
-        <button 
-          onClick={submitComment} 
-          style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
-        >
-          पाठवा
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+            <div style={{ borderTop: '1px solid #eee', padding: '10px 12px', display: 'flex', gap: '8px' }}>
+              <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Admin प्रतिक्रिया लिहा..." style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: '1px solid #ddd', fontFamily: 'inherit', fontSize: '13px' }} />
+              <button onClick={submitComment} style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>पाठवा</button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

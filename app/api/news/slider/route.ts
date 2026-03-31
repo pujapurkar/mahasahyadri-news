@@ -13,7 +13,8 @@ export async function GET() {
         C.CategoryName, NA.Author, NA.Gallery
       FROM NewsArticles NA
       LEFT JOIN Categories C ON NA.CategoryId = C.CategoryId
-      WHERE CAST(NA.PublishDate AS DATE) = CAST(GETDATE() AS DATE)
+     WHERE NA.PublishDate <= GETDATE()
+    AND CAST(NA.PublishDate AS DATE) = CAST(GETDATE() AS DATE)
       ORDER BY NA.PublishDate DESC
     `);
 
