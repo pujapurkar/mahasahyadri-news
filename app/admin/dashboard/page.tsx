@@ -29,6 +29,7 @@ export default function AdminDashboard() {
   const [heroes, setHeroes] = useState<WidgetItem[]>([]);
   const [vividha, setVividha] = useState<WidgetItem[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
+  const [refreshTime, setRefreshTime] = useState(0);
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState({ headline: '', content: '', categoryId: '0', author: '', date: '', breakingEnd: '', isHero: false });
   const [formMsg, setFormMsg] = useState({ text: '', color: 'green' });
@@ -42,6 +43,10 @@ export default function AdminDashboard() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const tickerRef = useRef<HTMLDivElement>(null);
   const sliderIntervalRef = useRef<any>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [catDropdownOpen, setCatDropdownOpen] = useState(false);
+  const [catMr, setCatMr] = useState('');
+  const [catEn, setCatEn] = useState('');
 
   // ---- Load all data ----
   useEffect(() => {
@@ -51,6 +56,7 @@ export default function AdminDashboard() {
     if (el) el.textContent = toMarathiDigits(new Date().getFullYear().toString());
   }, []);
 
+ 
   async function fetchAllData(cat: string) {
     try {
       const [newsRes, breakRes, sliderRes, catRes, mvRes, heroRes, vivRes] = await Promise.all([
@@ -120,14 +126,16 @@ export default function AdminDashboard() {
     const d = await res.json();
       if (d.status === 'OK') {
         const n = d.data;
-        setForm({ headline: n.Title, content: n.Content, categoryId: String(n.CategoryId), author: n.Author, date: n.PublishDate?.split('T')[0] || '', breakingEnd: n.BreakingEndDate 
+        setForm({ headline: n.Title, content: n.Content, categoryId: String(n.CategoryId), author: n.Author, date: n.PublishDate 
+  ? new Date(n.PublishDate).toISOString().slice(0,16)
+  : '', breakingEnd: n.BreakingEndDate 
   ? new Date(n.BreakingEndDate).toISOString().slice(0,16)
   : '' , isHero: n.IsHero || false });
         if (n.Gallery?.length) setFormMsg({ text: 'नोट: सध्याच्या प्रतिमा बदलण्यासाठी नवीन प्रतिमा निवडा', color: 'blue' });
       }
     } else {
       setEditId(null);
-      setForm({ headline: '', content: '', categoryId: '0', author: '', date: new Date().toISOString().split('T')[0], breakingEnd: '', isHero: false });
+      setForm({ headline: '', content: '', categoryId: '0', author: '', date: new Date().toISOString().slice(0,16), breakingEnd: '', isHero: false });
     }
     setModalOpen(true);
   }
@@ -175,6 +183,66 @@ export default function AdminDashboard() {
     fetchAllData(activeCategory);
   }
 
+  async function handleAddCategory() {
+  if (!catMr.trim()) {
+    alert('Marathi नाव भरा');
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/categories', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nameMr: catMr,
+        nameEn: catEn
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.status === 'OK') {
+      alert('Category added successfully');
+
+      setShowCategoryModal(false);
+      setCatMr('');
+      setCatEn('');
+
+      // 🔥 UI refresh
+      fetchAllData(activeCategory);
+    } else {
+      alert(data.message);
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert('Error occurred');
+  }
+}
+
+async function handleDeleteCategory(id: number) {
+   console.log("DELETE CLICKED:", id); // 👈 ADD THIS
+  if (!confirm('ही category delete करायची का?')) return;
+
+  try {
+    const res = await fetch(`/api/categories?id=${id}`, {
+      method: 'DELETE'
+    });
+
+    const data = await res.json();
+     console.log("DELETE RESPONSE:", data); // 👈 ADD THIS
+    if (data.status === 'OK') {
+      alert('Deleted successfully');
+      fetchAllData(activeCategory);
+    } else {
+      alert(data.message);
+    }
+
+  } catch (err) {
+    console.error(err);
+    alert('Error occurred');
+  }
+}
   // ---- Comments ----
   async function openComments(id: number, title: string) {
     setCurrentNewsId(id); setCurrentNewsTitle(title); setCommentsModal(true);
@@ -210,7 +278,7 @@ export default function AdminDashboard() {
     else { navigator.clipboard.writeText(url); alert('लिंक कॉपी झाली!\n' + url); }
   }
 
-  const categoryList = ['सर्व बातम्या', 'किल्ले', 'घाटवाटा', 'मंदिरे', 'वनसंपदा', 'पशुपक्षी', 'विविध'];
+  // const categoryList = ['सर्व बातम्या', 'किल्ले', 'घाटवाटा', 'मंदिरे', 'वनसंपदा', 'पशुपक्षी', 'विविध'];
 
  return (
     <>
@@ -356,13 +424,42 @@ export default function AdminDashboard() {
         </div>
 
         {/* Category Pills */}
-        <div className="categories">
-          {categoryList.map(cat => (
-            <button key={cat} className={`category-pill ${activeCategory === cat ? 'active' : ''}`} onClick={() => filterCategory(cat)}>
-              {cat}
-            </button>
-          ))}
-        </div>
+       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+
+  <div className="categories" style={{ flex: 1 }}>
+    {[
+  'सर्व बातम्या',
+  ...categories
+    .map(c => c.CategoryName)
+    .filter(c => c !== 'सर्व बातम्या')
+].map(cat => (
+      <button
+        key={cat}
+        className={`category-pill ${activeCategory === cat ? 'active' : ''}`}
+        onClick={() => filterCategory(cat)}
+      >
+        {cat}
+      </button>
+    ))}
+  </div>
+
+  <button
+    onClick={() => setShowCategoryModal(true)}
+    style={{
+      background: '#27A4F3',
+      color: '#fff',
+      border: 'none',
+      padding: '6px 12px',
+      borderRadius: '20px',
+      fontSize: '13px',
+      cursor: 'pointer',
+      whiteSpace: 'nowrap'
+    }}
+  >
+    + Add
+  </button>
+
+</div>
 
         {/* Main Layout */}
         <div className="main-layout">
@@ -473,7 +570,10 @@ export default function AdminDashboard() {
               ))}
             </div>
             <div className="widget">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 className="widget-title">📰 विविध बातम्या</h3>
+
+            </div>
               {vividha.map((item, i) => (
                 <div key={i} className="widget-item">
                   <a href={`/user/news/${item.Id}?admin=1`} style={{ textDecoration: 'none', color: 'inherit' }}>
@@ -522,13 +622,100 @@ export default function AdminDashboard() {
                 <label className="form-label">माहिती</label>
                 <textarea className="form-control" rows={6} value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} placeholder="बातमीची संपूर्ण माहिती लिहा" />
               </div>
-              <div className="form-group">
-                <label className="form-label">श्रेणी</label>
-                <select className="form-control" value={form.categoryId} onChange={e => setForm({ ...form, categoryId: e.target.value })}>
-                  <option value="0">श्रेणी निवडा</option>
-                  {categories.map(c => <option key={c.CategoryId} value={c.CategoryId}>{c.CategoryName}</option>)}
-                </select>
-              </div>
+              <div className="form-group" style={{ position: 'relative' }}>
+  <label className="form-label">श्रेणी</label>
+
+  <div
+    onClick={() => setCatDropdownOpen(o => !o)}
+    style={{
+      width: '100%', padding: '9px 10px', border: '1px solid #e0e0e0',
+      borderRadius: '8px', fontSize: '13px', cursor: 'pointer',
+      background: '#fff', display: 'flex', justifyContent: 'space-between',
+      alignItems: 'center', userSelect: 'none',
+      boxShadow: catDropdownOpen ? '0 0 0 2px rgba(39,164,243,0.15)' : 'none',
+      borderColor: catDropdownOpen ? '#27A4F3' : '#e0e0e0'
+    }}
+  >
+    <span style={{ color: form.categoryId === '0' ? '#aaa' : '#333' }}>
+      {form.categoryId === '0'
+        ? 'श्रेणी निवडा'
+        : categories.find(c => String(c.CategoryId) === form.categoryId)?.CategoryName || 'श्रेणी निवडा'}
+    </span>
+    <span style={{ fontSize: '11px', color: '#888' }}>{catDropdownOpen ? '▲' : '▼'}</span>
+  </div>
+
+  {catDropdownOpen && (
+    <div style={{
+      position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999,
+      background: '#fff', border: '1px solid #e0e0e0', borderRadius: '8px',
+      boxShadow: '0 4px 16px rgba(0,0,0,0.12)', maxHeight: '220px',
+      overflowY: 'auto', marginTop: '4px'
+    }}>
+      <div
+        onClick={() => { setForm({ ...form, categoryId: '0' }); setCatDropdownOpen(false); }}
+        style={{
+          padding: '9px 12px', fontSize: '13px', color: '#aaa',
+          cursor: 'pointer', borderBottom: '1px solid #f0f0f0'
+        }}
+      >
+        श्रेणी निवडा
+      </div>
+
+      {categories.map(c => (
+        <div
+          key={c.CategoryId}
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '9px 12px', fontSize: '13px', cursor: 'pointer',
+            background: String(c.CategoryId) === form.categoryId ? '#e3f2fd' : 'transparent',
+            transition: 'background 0.15s'
+          }}
+          onMouseEnter={e => {
+            if (String(c.CategoryId) !== form.categoryId)
+              (e.currentTarget as HTMLDivElement).style.background = '#f5f5f5';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLDivElement).style.background =
+              String(c.CategoryId) === form.categoryId ? '#e3f2fd' : 'transparent';
+          }}
+        >
+          <span
+            onClick={() => { setForm({ ...form, categoryId: String(c.CategoryId) }); setCatDropdownOpen(false); }}
+            style={{ flex: 1, color: '#333' }}
+          >
+            {c.CategoryName}
+          </span>
+
+          <span
+          onClick={async (e) => {
+  e.stopPropagation();
+
+  const confirmed = window.confirm(`"${c.CategoryName}" delete करायची का?`);
+  if (!confirmed) return;
+
+  // selected category reset
+  if (String(c.CategoryId) === form.categoryId) {
+    setForm(f => ({ ...f, categoryId: '0' }));
+  }
+
+  await handleDeleteCategory(c.CategoryId);
+}}
+            title="Delete category"
+            style={{
+              marginLeft: '10px', color: '#e53935', fontSize: '15px',
+              lineHeight: '1', padding: '2px 4px', borderRadius: '4px',
+              cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s'
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLSpanElement).style.background = '#ffecec'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLSpanElement).style.background = 'transparent'; }}
+          >
+            ✕
+          </span>
+        </div>
+      ))}
+    </div>
+  )}
+</div>
               <div className="form-group">
                 <label className="form-label">प्रतिमा</label>
                 <input type="file" id="imageInput" multiple accept="image/*" style={{ display: 'none' }} onChange={handleImages} />
@@ -634,6 +821,60 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+      {/* Category Add Modal */}
+{showCategoryModal && (
+  <div className="modal-overlay active" onClick={() => setShowCategoryModal(false)}>
+    <div
+      className="modal-content"
+      style={{ maxWidth: '400px' }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="modal-header">
+        <h3>Add Category</h3>
+        <button onClick={() => setShowCategoryModal(false)}>×</button>
+      </div>
+
+      <div className="modal-body">
+
+        <div className="form-group">
+          <label className="form-label">Marathi Name</label>
+          <input
+            type="text"
+            className="form-control"
+            value={catMr}
+            onChange={(e) => setCatMr(e.target.value)}
+          />
+        </div>
+
+        <div className="form-group">
+          <label className="form-label">English Name</label>
+          <input
+            type="text"
+            className="form-control"
+            value={catEn}
+            onChange={(e) => setCatEn(e.target.value)}
+          />
+        </div>
+
+        <button
+          onClick={handleAddCategory}
+          style={{
+            width: '100%',
+            padding: '10px',
+            background: '#27A4F3',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          Save
+        </button>
+
+      </div>
+    </div>
+  </div>
+)}
     </>
   );
 }
