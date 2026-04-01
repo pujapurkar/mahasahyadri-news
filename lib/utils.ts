@@ -19,16 +19,13 @@ export function getMarathiDate(): string {
 // Relative time in Marathi
 export function getRelativeTime(dateStr: string): string {
   const now = new Date();
-  const fixedDateStr = dateStr.replace(' ', 'T');
-  
-  // Append 'Z' to treat DB timestamp as UTC (adjust if your DB stores local time)
-  const withTz = fixedDateStr.endsWith('Z') || fixedDateStr.includes('+')
-    ? fixedDateStr
-    : fixedDateStr + 'Z';
 
-  const then = new Date(withTz);
+  // 🔥 FIX: ensure valid ISO format
+  const then = new Date(dateStr);
 
-  if (isNaN(then.getTime())) return 'अज्ञात वेळ';
+  if (isNaN(then.getTime())) {
+    return 'अज्ञात वेळ'; // fallback
+  }
 
   const diffMs = now.getTime() - then.getTime();
   const diffSec = Math.floor(diffMs / 1000);
@@ -41,8 +38,13 @@ export function getRelativeTime(dateStr: string): string {
   if (diffHour < 24) return `${toMarathiDigits(diffHour)} तासांपूर्वी`;
   if (diffDay < 2) return 'काल';
 
-  return then.toLocaleDateString('mr-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  return then.toLocaleDateString('mr-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
 }
+
 // Format date in Marathi
 export function formatMarathiDate(dateStr: string): string {
   const date = new Date(dateStr);
