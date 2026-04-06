@@ -92,17 +92,8 @@ export async function POST(req: Request) {
     }
 
     // Always use current datetime
-  const publishDateTime = new Date(date);
-
-  publishDateTime.setMinutes(
-  publishDateTime.getMinutes() - publishDateTime.getTimezoneOffset()
-);
-
-const breakingEndDate = new Date(breakingEnd);
-
-breakingEndDate.setMinutes(
-  breakingEndDate.getMinutes() - breakingEndDate.getTimezoneOffset()
-);
+  const publishDateTime = date ? new Date(date) : new Date();
+const breakingEndDate = breakingEnd ? new Date(breakingEnd) : null;
     // Insert into database
     const db = await getDB();
     await db
@@ -113,7 +104,7 @@ breakingEndDate.setMinutes(
       .input('author', sql.NVarChar, author)
       .input('publishDate', sql.DateTime, publishDateTime)
       .input('gallery', sql.NVarChar, JSON.stringify(galleryPaths))
-     .input('breakingEndDate', sql.DateTime, breakingEndDate)
+     .input('breakingEndDate', sql.DateTime, breakingEndDate || null)
       .input('isHero', sql.Bit, isHero === '1')
       .query(`
         INSERT INTO NewsArticles 
@@ -178,18 +169,9 @@ export async function PUT(req: Request) {
     }
 
     // Always use current datetime for updates
-  const publishDateTime = new Date(date);
-  publishDateTime.setMinutes(
-  publishDateTime.getMinutes() - publishDateTime.getTimezoneOffset()
-);
-
-const breakingEnd = formData.get('breakingEnd') as string;
-
-const breakingEndDate = new Date(breakingEnd);
-
-breakingEndDate.setMinutes(
-  breakingEndDate.getMinutes() - breakingEndDate.getTimezoneOffset()
-);
+ const breakingEnd = formData.get('breakingEnd') as string;
+const publishDateTime = date ? new Date(date) : new Date();
+const breakingEndDate = breakingEnd ? new Date(breakingEnd) : null;
     // Update database
     await db
       .request()
@@ -200,7 +182,7 @@ breakingEndDate.setMinutes(
       .input('author', sql.NVarChar, author)
       .input('publishDate', sql.DateTime, publishDateTime)
       .input('gallery', sql.NVarChar, JSON.stringify(galleryPaths))
-      .input('breakingEndDate', sql.DateTime, breakingEndDate)
+     .input('breakingEndDate', sql.DateTime, breakingEndDate || null)
       .input('isHero', sql.Bit, isHero === '1')
       .query(`
         UPDATE NewsArticles 

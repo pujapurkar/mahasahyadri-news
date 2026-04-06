@@ -6,9 +6,11 @@ export async function GET() {
   try {
     const db = await getDB();
 
-    const result = await db.request().query(
-      'SELECT CategoryId, CategoryName FROM Categories ORDER BY CategoryId ASC'
-    );
+   const result = await db.request().query(`
+  SELECT CategoryId, CategoryName, NameMr, NameEn 
+  FROM Categories 
+  ORDER BY CategoryId ASC
+`);
 
     return NextResponse.json({
       status: 'OK',
@@ -54,11 +56,13 @@ export async function POST(req: Request) {
 
     // 🔥 Insert
     await db.request()
-      .input('name', nameMr)
-      .query(`
-        INSERT INTO Categories (CategoryName)
-        VALUES (@name)
-      `);
+  .input('categoryName', nameMr)
+  .input('nameMr', nameMr)
+  .input('nameEn', nameEn || '')
+  .query(`
+    INSERT INTO Categories (CategoryName, NameMr, NameEn)
+    VALUES (@categoryName, @nameMr, @nameEn)
+  `);
 
     return NextResponse.json({ status: 'OK' });
 

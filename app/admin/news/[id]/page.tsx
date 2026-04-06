@@ -2,7 +2,10 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getMarathiDate, formatMarathiDate } from '@/lib/utils';
+import { getMarathiDate, formatDate } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
+import { getCurrentDate } from '@/lib/utils';
+import { translations } from '@/lib/translations';
 
 interface NewsDetail {
   Id: number;
@@ -19,15 +22,13 @@ export default function AdminNewsDetailPage() {
   const params = useParams();
   const id = params?.id;
   const router = useRouter();
-
+  const { language, setLanguage } = useLanguage();
   const [news, setNews] = useState<NewsDetail | null>(null);
   const [mainImage, setMainImage] = useState('');
-  const [marathiDate, setMarathiDate] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
 
   useEffect(() => {
-    setMarathiDate(getMarathiDate());
 
     if (id) {
       fetchNews();
@@ -75,7 +76,7 @@ export default function AdminNewsDetailPage() {
         minHeight: '100vh'
       }}>
         <div style={{ color: '#27A4F3', fontSize: '18px' }}>
-          लोड होत आहे...
+        {language === 'mr' ? 'लोड होत आहे...' : 'Loading...'}
         </div>
       </div>
     );
@@ -105,9 +106,29 @@ export default function AdminNewsDetailPage() {
             🏔️ महासह्याद्री (Admin)
           </div>
 
-          <div style={{ fontSize: '13px' }}>
-            {marathiDate}
-          </div>
+          <div style={{
+  fontSize: '13px',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px'
+}}>
+  <span>{getCurrentDate(language)}</span>
+
+ <span>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
+  <select
+    value={language}
+    onChange={(e) => setLanguage(e.target.value as 'mr' | 'en')}
+    style={{
+      padding: '4px',
+      borderRadius: '5px',
+      border: 'none',
+      cursor: 'pointer'
+    }}
+  >
+    <option value="mr">Marathi</option>
+    <option value="en">English</option>
+  </select>
+</div>
         </div>
       </div>
 
@@ -126,7 +147,7 @@ export default function AdminNewsDetailPage() {
             marginBottom: '15px'
           }}
         >
-          ← Admin Dashboard
+         ← {language === 'mr' ? 'ॲडमिन डॅशबोर्ड' : 'Admin Dashboard'}
         </button>
 
 
@@ -137,9 +158,9 @@ export default function AdminNewsDetailPage() {
           borderRadius: '12px',
           boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
         }}>
-
+          
           <h1 style={{ fontSize: '28px', marginBottom: '10px' }}>
-            {news.Title}
+            {language === 'mr' ? news.Title : "This is English Title"}
           </h1>
 
           <div style={{
@@ -147,9 +168,9 @@ export default function AdminNewsDetailPage() {
             marginBottom: '20px',
             fontSize: '14px'
           }}>
-            📅 {formatMarathiDate(news.PublishDate)} |
-            👤 {news.Author} |
-            🏷️ {news.CategoryName}
+             📅 {formatDate(news.PublishDate, language)} |
+            👤 {language === 'mr' ? news.Author : "Author"} |
+           🏷️ {translations[language].allNews}
           </div>
 
 
@@ -172,7 +193,9 @@ export default function AdminNewsDetailPage() {
               fontSize: '16px',
               lineHeight: '1.8'
             }}
-            dangerouslySetInnerHTML={{ __html: news.Content }}
+dangerouslySetInnerHTML={{
+  __html: language === 'mr' ? news.Content : "This is English Content"
+}}
           />
 
 

@@ -1,0 +1,35 @@
+export const translations = {
+  en: {
+    title: "Maha Sahyadri",
+    breaking: "Breaking News",
+    addNews: "Add News",
+    allNews: "All News",
+    mostViewed: "Most Viewed",
+    heroes: "Sahyadri Heroes",
+    vividha: "Other News",
+    edit: "Edit",
+    delete: "Delete",
+      image: "Image",
+  selectImage: "Select Images (You can select multiple)",
+  category: "Category",
+  selectCategory: "Select Category",
+  breakingEnd: "Breaking End Date/Time",
+
+  },
+  mr: {
+    title: "महासह्याद्री",
+    breaking: "ताज्या बातम्या",
+    addNews: "नवीन बातमी जोडा",
+    allNews: "सर्व बातम्या",
+    mostViewed: "सर्वाधिक पाहिलेले",
+    heroes: "सह्याद्रीचे शिलेदार",
+    vividha: "विविध बातम्या",
+    edit: "संपादन",
+    delete: "हटवा",
+     image: "प्रतिमा",
+    selectImage: "प्रतिमा निवडा (एकापेक्षा जास्त निवडू शकता)",
+    category: "श्रेणी",
+    selectCategory: "श्रेणी निवडा",
+    breakingEnd: "ब्रेकिंग समाप्त दिनांक/वेळ",
+  }
+} as const;

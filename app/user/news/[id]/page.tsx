@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getMarathiDate, formatMarathiDate } from '@/lib/utils';
+import { getMarathiDate, formatDate } from '@/lib/utils';
 
 interface NewsDetail {
   Id: number;
@@ -129,7 +129,7 @@ useEffect(() => {
           <h1 className="news-title">{news.Title}</h1>
 
           <div className="news-meta">
-            <span>📅 {formatMarathiDate(news.PublishDate)}</span>
+           <span>📅 {formatDate(news.PublishDate, 'mr')}</span>
             <span>|</span>
             <span>👤 {news.Author}</span>
             <span>|</span>

@@ -487,11 +487,12 @@ async function submitReply(parentId: number) {
                   )}
                 </div>
                 <div style={{ marginTop: '6px', fontSize: '14px', lineHeight: '1.5' }}>{c.Text}</div>
-                <div style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>{c.Date}</div>
+                <div style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>
+  {getRelativeTime(c.Date)}
+</div>
                 
                 {/* Action Buttons */}
-                <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-                  <button 
+                 <button 
                     onClick={() => setReplyTo(replyTo === c.CommentId ? null : c.CommentId)} 
                     style={{ border: 'none', background: '#e3f2fd', color: '#1976d2', fontSize: '12px', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
                   >
@@ -527,8 +528,7 @@ async function submitReply(parentId: number) {
                     </div>
                   </div>
                 )}
-              </div>
-
+              
               {/* Nested Replies */}
               {c.Replies && c.Replies.length > 0 && (
                 <div style={{ marginLeft: '30px', marginBottom: '12px' }}>
@@ -541,7 +541,7 @@ async function submitReply(parentId: number) {
                         )}
                       </div>
                       <div style={{ marginTop: '4px', fontSize: '13px', lineHeight: '1.4' }}>{reply.Text}</div>
-                      <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>{reply.Date}</div>
+                      <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>{getRelativeTime(reply.Date)}</div>
                     </div>
                   ))}
                 </div>

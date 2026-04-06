@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { LanguageProvider } from '@/lib/LanguageContext';
 
 export const metadata: Metadata = {
   title: 'महासह्याद्री',
@@ -15,7 +16,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+  <LanguageProvider>
+    {children}
+  </LanguageProvider>
+</body>
     </html>
   );
 }

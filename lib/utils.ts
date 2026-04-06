@@ -4,56 +4,131 @@ export function toMarathiDigits(input: string | number): string {
   return String(input).replace(/\d/g, (d) => marathiDigits[parseInt(d)]);
 }
 
+/**
+ * Safely parses a SQL Server datetime string to a JS Date object.
+ *
+ * SQL Server returns: "2026-04-03 15:30:00.123"
+ * Strategy: Treat it as IST (UTC+05:30) since your SQL Server is local (IST).
+ * If your SQL Server stores UTC, remove the '+05:30' suffix below.
+ */
+export function parseSQLDate(dateStr: string): Date {
+  if (!dateStr) return new Date(NaN);
+
+  const trimmed = String(dateStr).trim();
+
+  // SQL format: "2026-04-03 11:26:55.583"
+  const match = trimmed.match(
+    /^(\d{4})-(\d{2})-(\d{2})[\sT](\d{2}):(\d{2}):(\d{2})/
+  );
+
+  if (match) {
+    const [, year, month, day, hour, min, sec] = match;
+    return new Date(
+      parseInt(year),
+      parseInt(month) - 1,
+      parseInt(day),
+      parseInt(hour),
+      parseInt(min),
+      parseInt(sec)
+    );
+  }
+
+  return new Date(NaN);
+}
+
 // Get current date in Marathi
-export function getMarathiDate(): string {
+export function getCurrentDate(lang: 'mr' | 'en' = 'mr'): string {
   const date = new Date();
-  const formatted = date.toLocaleDateString('mr-IN', {
+
+  if (lang === 'mr') {
+    const formatted = date.toLocaleDateString('mr-IN', {
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      weekday: 'long',
+    });
+    return toMarathiDigits(formatted);
+  }
+
+  return date.toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
     weekday: 'long',
   });
-  return toMarathiDigits(formatted);
 }
 
-// Relative time in Marathi
-export function getRelativeTime(dateStr: string): string {
-  const now = new Date();
+// Relative time in Marathi (or English)
+export function getRelativeTime(dateStr: string, lang: 'mr' | 'en' = 'mr'): string {
+  if (!dateStr) return lang === 'mr' ? 'अज्ञात वेळ' : 'Unknown time';
 
-  // 🔥 FIX: ensure valid ISO format
-  const then = new Date(dateStr);
+  const then = parseSQLDate(dateStr);
 
   if (isNaN(then.getTime())) {
-    return 'अज्ञात वेळ'; // fallback
+    return lang === 'mr' ? 'अज्ञात वेळ' : 'Unknown time';
   }
 
-  const diffMs = now.getTime() - then.getTime();
-  const diffSec = Math.floor(diffMs / 1000);
-  const diffMin = Math.floor(diffSec / 60);
-  const diffHour = Math.floor(diffMin / 60);
-  const diffDay = Math.floor(diffHour / 24);
+  if (lang === 'mr') {
+    // तारीख: "०३ एप्रि २०२६"
+    const datePart = toMarathiDigits(
+      then.toLocaleDateString('mr-IN', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+      })
+    );
 
-  if (diffSec < 60) return 'काही सेकंदांपूर्वी';
-  if (diffMin < 60) return `${toMarathiDigits(diffMin)} मिनिटांपूर्वी`;
-  if (diffHour < 24) return `${toMarathiDigits(diffHour)} तासांपूर्वी`;
-  if (diffDay < 2) return 'काल';
+    // वेळ: "दुपारी ३:४७"
+    const timePart = toMarathiDigits(
+      then.toLocaleTimeString('mr-IN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
+      })
+    );
 
-  return then.toLocaleDateString('mr-IN', {
+    return `${datePart}, ${timePart}`;
+  }
+
+  // English format
+  const datePart = then.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  const timePart = then.toLocaleTimeString('en-IN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+
+  return `${datePart}, ${timePart}`;
+}
+// Format date in Marathi
+export function formatDate(dateStr: string, lang: 'mr' | 'en' = 'mr'): string {
+  const date = parseSQLDate(dateStr); // ← use the same safe parser
+
+  if (isNaN(date.getTime())) return '';
+
+  if (lang === 'mr') {
+    const formatted = date.toLocaleDateString('mr-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+    return toMarathiDigits(formatted);
+  }
+
+  return date.toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
 }
 
-// Format date in Marathi
-export function formatMarathiDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const formatted = date.toLocaleDateString('mr-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  });
-  return toMarathiDigits(formatted);
+export function getMarathiDate(): string {
+  return getCurrentDate('mr');
 }
 
 // Parse gallery JSON
@@ -62,8 +137,7 @@ export function parseGallery(galleryJson: string): string[] {
   try {
     const parsed = JSON.parse(galleryJson);
     const arr = Array.isArray(parsed) ? parsed : [];
-    // Fix paths that don't start with /
-    return arr.map(path => path.startsWith('/') ? path : `/${path}`);
+    return arr.map((path: string) => (path.startsWith('/') ? path : `/${path}`));
   } catch {
     return [];
   }
@@ -88,3 +162,4 @@ export function maskEmail(email: string): string {
   const masked = username[0] + '*'.repeat(username.length - 1);
   return masked + '@' + domain;
 }
+

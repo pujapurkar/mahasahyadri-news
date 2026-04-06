@@ -37,7 +37,7 @@ export async function GET(req: Request) {
         CommentId: r.CommentId,
         User: r.FullName,
         Text: r.Content,
-        Date: new Date(r.CommentDate).toLocaleString('en-IN'),
+        Date: r.CommentDate,
         ParentId: r.ParentId,
         Replies: []
       };
