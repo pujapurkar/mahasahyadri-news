@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getDB } from '@/lib/db';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+
+    const { searchParams } = new URL(request.url);
+    const lang = searchParams.get('lang') || 'mr';
     const db = await getDB();
 
     const result = await db.request().query(`
@@ -16,7 +19,11 @@ export async function GET() {
 
     const data = result.recordset.length > 0
       ? result.recordset.map((r: any) => r.Title)
-      : ['कोणत्याही ब्रेकिंग न्यूज नाहीत'];
+      : [
+  lang === 'mr'
+    ? 'कोणत्याही ब्रेकिंग न्यूज नाहीत'
+    : 'No breaking news available'
+];
 
     return NextResponse.json({ status: 'OK', data });
 

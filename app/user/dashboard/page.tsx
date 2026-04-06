@@ -2,6 +2,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { getMarathiDate, getRelativeTime, parseGallery, truncateText, toMarathiDigits } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
+import { getCurrentDate } from '@/lib/utils';
+import { translations } from '@/lib/translations';
+
 
 interface NewsItem {
   Id: number;
@@ -15,16 +19,29 @@ interface NewsItem {
 }
 interface SliderItem { Id: number; Title: string; Excerpt: string; Category: string; Author: string; TimeAgo: string; HeroImage: string; }
 interface WidgetItem { Id?: number; Title: string; SubTitle: string; Url?: string; }
-interface Category { CategoryId: number; CategoryName: string; }
-
+interface Category { 
+  CategoryId: number; 
+  CategoryName: string; 
+  NameMr: string;
+  NameEn: string;
+}
 export default function UserDashboard() {
   const router = useRouter();
-  const [marathiDate, setMarathiDate] = useState('');
+  // ✅ ONLY THIS SHOULD EXIST
+
+  const { language, setLanguage } = useLanguage();
   const [breakingNews, setBreakingNews] = useState<string[]>([]);
   const [sliderNews, setSliderNews] = useState<SliderItem[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [activeCategory, setActiveCategory] = useState('सर्व बातम्या');
+  const categoryMap: Record<string, string> = Object.fromEntries(
+  categories.map(c => [
+    c.CategoryName,
+    language === 'mr' ? c.NameMr : c.NameEn
+  ])
+);
+
+  const [activeCategory, setActiveCategory] = useState('all');
   const [mostViewed, setMostViewed] = useState<WidgetItem[]>([]);
   const [heroes, setHeroes] = useState<WidgetItem[]>([]);
   const [vividha, setVividha] = useState<WidgetItem[]>([]);
@@ -40,28 +57,33 @@ export default function UserDashboard() {
   const [replyText, setReplyText] = useState('');
   const [userName, setUserName] = useState(''); // User's name for comment
   
-
   // ---- Load all data ----
   useEffect(() => {
-    setMarathiDate(getMarathiDate());
-    fetchAllData('सर्व बातम्या');
+  
+    fetchAllData('all');
     const el = document.getElementById('footerYear');
     if (el) el.textContent = toMarathiDigits(new Date().getFullYear().toString());
   }, []);
 
   useEffect(() => {
-    fetch('/api/news')
-      .then(res => res.json())
-      .then(d => {
-        if (d.status === 'OK') setNews(d.data);
-      });
-  }, []);
+  fetchAllData(activeCategory);
+}, [language]);
 
   async function fetchAllData(cat: string) {
     try {
-      const [newsRes, breakRes, sliderRes, catRes, mvRes, heroRes, vivRes] = await Promise.all([
-        fetch(`/api/news?category=${encodeURIComponent(cat)}`),
-        fetch('/api/news/breaking'),
+     const apiCat = cat === 'all' ? '' : cat;
+
+const [
+  newsRes,
+  breakRes,
+  sliderRes,
+  catRes,
+  mvRes,
+  heroRes,
+  vivRes
+] = await Promise.all([
+  fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`),
+       fetch(`/api/news/breaking?lang=${language}`),
         fetch('/api/news/slider'),
         fetch('/api/categories'),
         fetch('/api/news/most-viewed'),
@@ -89,28 +111,47 @@ export default function UserDashboard() {
     return () => clearInterval(sliderIntervalRef.current);
   }, [sliderNews]);
 
-  // ---- Breaking ticker ----
-  useEffect(() => {
-    const ticker = tickerRef.current;
-    if (!ticker || breakingNews.length === 0) return;
-    let x = window.innerWidth;
-    const speed = 1.5;
-    let raf: number;
-    function step() {
-      x -= speed;
-      if (x <= -ticker!.scrollWidth) x = window.innerWidth;
-      ticker!.style.transform = `translateX(${x}px)`;
-      raf = requestAnimationFrame(step);
+ // ---- Breaking ticker ----
+useEffect(() => {
+  const ticker = tickerRef.current;
+  if (!ticker) return;
+
+  if (breakingNews.length === 0) {
+    ticker.style.transform = `translateX(0px)`;
+    return;
+  }
+
+  let x = window.innerWidth;
+  const speed = 1.5;
+  let raf: number;
+
+  function step() {
+    x -= speed;
+
+   if (x <= -ticker!.scrollWidth) {
+      x = window.innerWidth;
     }
+
+    ticker!.style.transform = `translateX(${x}px)`;
     raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [breakingNews]);
+  }
+
+  raf = requestAnimationFrame(step);
+
+  return () => cancelAnimationFrame(raf);
+
+}, [breakingNews, language]);
 
   // ---- Category filter ----
   function filterCategory(cat: string) {
-    setActiveCategory(cat);
-    fetch(`/api/news?category=${encodeURIComponent(cat)}`).then(r => r.json()).then(d => { if (d.status === 'OK') setNews(d.data); });
-  }
+  setActiveCategory(cat);
+
+  const apiCat = cat === 'all' ? '' : cat;
+
+  fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
+    .then(r => r.json())
+    .then(d => { if (d.status === 'OK') setNews(d.data); });
+}
 
  async function openComments(id: number, title: string) {
     setCurrentNewsId(id); setCurrentNewsTitle(title); setCommentsModal(true);
@@ -121,11 +162,18 @@ export default function UserDashboard() {
 
 async function submitComment() {
   if (!userName.trim()) {
-    alert('कृपया तुमचे नाव टाका.');
+   alert(language === 'mr' 
+  ? 'कृपया तुमचे नाव टाका.' 
+  : 'Please enter your name.'
+);
     return;
   }
   if (!newComment.trim()) { 
-    alert('कृपया तुमची प्रतिक्रिया लिहा.'); 
+   alert(
+  language === 'mr'
+    ? 'कृपया तुमची प्रतिक्रिया लिहा.'
+    : 'Please write your comment.'
+);
     return; 
   }
   
@@ -137,7 +185,11 @@ async function submitComment() {
     const d = await res.json();
     
     if (d.status === 'OK') {
-      alert('प्रतिक्रिया यशस्वीरित्या जोडली!');
+     alert(
+  language === 'mr'
+    ? 'प्रतिक्रिया यशस्वीरित्या जोडली!'
+    : 'Comment added successfully!'
+);
       setNewComment('');
       
       const r = await fetch(`/api/comments?newsId=${currentNewsId}`);
@@ -147,21 +199,39 @@ async function submitComment() {
         setComments(rd.comments);
       }
     } else {
-      alert('त्रुटी: ' + d.message);
+     alert(
+  language === 'mr'
+    ? 'त्रुटी: ' + d.message
+    : 'Error: ' + d.message
+);
+
     }
   } catch (error) {
     console.error('Comment submit error:', error);
-    alert('प्रतिक्रिया जोडताना त्रुटी झाली!');
+   alert(
+  language === 'mr'
+    ? 'प्रतिक्रिया जोडताना त्रुटी झाली!'
+    : 'Error while adding comment!'
+);
   }
 }
 
 async function submitReply(parentId: number) {
   if (!userName.trim()) {
-    alert('कृपया तुमचे नाव टाका.');
+    alert(
+  language === 'mr'
+    ? 'कृपया तुमचे नाव टाका.'
+    : 'Please enter your name.'
+);
+
     return;
   }
   if (!replyText.trim()) { 
-    alert('कृपया तुमचे उत्तर लिहा.'); 
+    alert(
+  language === 'mr'
+    ? 'कृपया तुमचे उत्तर लिहा.'
+    : 'Please write your reply.'
+);
     return; 
   }
   
@@ -173,7 +243,11 @@ async function submitReply(parentId: number) {
     const d = await res.json();
     
     if (d.status === 'OK') {
-      alert('उत्तर यशस्वीरित्या जोडले!');
+      alert(
+  language === 'mr'
+    ? 'उत्तर यशस्वीरित्या जोडले!'
+    : 'Reply added successfully!'
+);
       setReplyText('');
       setReplyTo(null);
       
@@ -192,7 +266,11 @@ async function submitReply(parentId: number) {
   }
 }
    async function deleteComment(cid: number) {
-    if (!confirm('ही प्रतिक्रिया delete करायची खात्री आहे का?')) return;
+    if (!confirm(
+  language === 'mr'
+    ? 'ही प्रतिक्रिया delete करायची खात्री आहे का?'
+    : 'Are you sure you want to delete this comment?'
+)) return;
     await fetch(`/api/comments?commentId=${cid}`, { method: 'DELETE' });
     const r = await fetch(`/api/comments?newsId=${currentNewsId}`);
     const d = await r.json();
@@ -203,10 +281,12 @@ async function submitReply(parentId: number) {
     e.preventDefault(); e.stopPropagation();
     const url = `${window.location.origin}/news/${id}`;
     if (navigator.share) { navigator.share({ title: '📰 महासह्याद्री', url }).catch(() => {}); }
-    else { navigator.clipboard.writeText(url); alert('लिंक कॉपी झाली!\n' + url); }
+    else { navigator.clipboard.writeText(url); alert(
+  (language === 'mr' ? 'लिंक कॉपी झाली!' : 'Link copied!') + '\n' + url
+); }
   }
 
-  const categoryList = ['सर्व बातम्या', 'किल्ले', 'घाटवाटा', 'मंदिरे', 'वनसंपदा', 'पशुपक्षी', 'विविध'];
+ 
   return (
     <>
       <style>{`
@@ -276,18 +356,41 @@ async function submitReply(parentId: number) {
         <div className="container">
           <div className="header-content">
             <div className="site-title" onClick={() => router.push('/user/dashboard')}>
-              🏔️ महासह्याद्री
+              🏔️ {translations[language].title}
             </div>
             <div style={{ textAlign: 'right' }}>
-              <div style={{ fontSize: '12px', fontWeight: 500 }}>{marathiDate}</div>
+            <div style={{ 
+  display: 'flex', 
+  alignItems: 'center', 
+  gap: '10px',
+  fontSize: '12px'
+}}>
+  <span>{getCurrentDate(language)}</span>
+
+  <span>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
+
+  <select
+    value={language}
+    onChange={(e) => setLanguage(e.target.value as 'mr' | 'en')}
+  >
+    <option value="mr">Marathi</option>
+    <option value="en">English</option>
+  </select>
+</div>
             </div>
           </div>
           <div className="breaking-news" style={{ marginTop: '14px' }}>
-            <span className="breaking-label">🔴 ताज्या बातम्या:</span>
+            <span className="breaking-label">🔴 {translations[language].breaking}:</span>
             <div className="news-ticker-wrapper">
-              <div className="news-ticker" ref={tickerRef}>
-                {breakingNews.map((title, i) => <span key={i}>{title} &nbsp;&nbsp;&nbsp;</span>)}
-              </div>
+             <div className="news-ticker" ref={tickerRef}>
+  {breakingNews.length === 0 ? (
+    <span>{translations[language].noBreaking}</span>
+  ) : (
+    breakingNews.map((title, i) => (
+      <span key={i}>{title} &nbsp;&nbsp;&nbsp;</span>
+    ))
+  )}
+</div>
             </div>
           </div>
         </div>
@@ -304,7 +407,7 @@ async function submitReply(parentId: number) {
                 <div className="slide-title">{item.Title}</div>
                 <div className="slide-description">{item.Excerpt}</div>
                 <div style={{ display: 'flex', gap: '18px', marginTop: '10px', fontSize: '14px' }}>
-                  🏷️ {item.Category} &nbsp; 📅 {item.TimeAgo} &nbsp; 👤 {item.Author}
+                  🏷️ {categoryMap[item.Category] || item.Category} &nbsp; 📅 {item.TimeAgo} &nbsp; 👤 {item.Author}
                 </div>
               </div>
             </div>
@@ -322,12 +425,22 @@ async function submitReply(parentId: number) {
 
         {/* Category Pills */}
         <div className="categories">
-          {categoryList.map(cat => (
-            <button key={cat} className={`category-pill ${activeCategory === cat ? 'active' : ''}`} onClick={() => filterCategory(cat)}>
-              {cat}
-            </button>
-          ))}
-        </div>
+  {[
+    { label: translations[language].allNews, value: 'all' },
+    ...categories.map(c => ({
+      label: language === 'mr' ? c.NameMr : c.NameEn,
+      value: c.CategoryName
+    }))
+  ].map(cat => (
+    <button
+      key={cat.value}
+      className={`category-pill ${activeCategory === cat.value ? 'active' : ''}`}
+      onClick={() => filterCategory(cat.value)}
+    >
+      {cat.label}
+    </button>
+  ))}
+</div>
 
         {/* Main Layout */}
         <div className="main-layout">
@@ -355,7 +468,7 @@ async function submitReply(parentId: number) {
                       color: '#666',
                       fontSize: '14px'
                     }}>
-                      📷 छायाचित्र उपलब्ध नाही
+                     📷 {language === 'mr' ? 'छायाचित्र उपलब्ध नाही' : 'Image not available'}
                     </div>
                   )}
                 </div>
@@ -363,13 +476,15 @@ async function submitReply(parentId: number) {
                 {/* Content Area */}
                 <div className="news-content-area">
                   <div>
-                    <span className="news-category">{item.Category}</span>
+                  <span className="news-category">
+  {categoryMap[item.Category] || item.Category}
+</span>
                     <h3 className="news-title">{item.Title}</h3>
                     <p className="news-excerpt">{truncateText(item.Content, 180)}</p>
                   </div>
 
                  <div className="news-meta">
-  <span>📅 {getRelativeTime(item.PublishDate)}</span>
+<span>📅 {getRelativeTime(item.PublishDate, language)}</span>
   <span>•</span>
   <span>👤 {item.Author}</span>
   <span>•</span>
@@ -407,7 +522,7 @@ async function submitReply(parentId: number) {
           {/* Sidebar */}
           <div className="sidebar">
             <div className="widget">
-              <h3 className="widget-title">⛰️ सर्वाधिक पाहिलेले</h3>
+              <h3 className="widget-title">⛰️ {translations[language].mostViewed}</h3>
               {mostViewed.map((item, i) => (
                 <div key={i} className="widget-item" onClick={() => router.push(`/user/news/${item.Id}`)}>
                   <div className="widget-item-title">{item.Title}</div>
@@ -416,7 +531,7 @@ async function submitReply(parentId: number) {
               ))}
             </div>
             <div className="widget">
-              <h3 className="widget-title">🎭 सह्याद्रीचे शिलेदार</h3>
+              <h3 className="widget-title">🎭 {translations[language].heroes}</h3>
               {heroes.map((item, i) => (
                 <div key={i} className="widget-item" onClick={() => router.push(`/user/news/${item.Id}`)}>
                   <div className="widget-item-title">{item.Title}</div>
@@ -425,7 +540,7 @@ async function submitReply(parentId: number) {
               ))}
             </div>
             <div className="widget">
-              <h3 className="widget-title">📰 विविध बातम्या</h3>
+              <h3 className="widget-title">📰 {translations[language].vividha}</h3>
               {vividha.map((item, i) => (
                 <div key={i} className="widget-item" onClick={() => router.push(`/user/news/${item.Id}`)}>
                   <div className="widget-item-title">{item.Title}</div>
@@ -442,16 +557,16 @@ async function submitReply(parentId: number) {
         <div className="container">
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', padding: '20px 0' }}>
             <div>
-              <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>आमच्याबद्दल</h3>
+              <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>{translations[language].about}</h3>
               <p>सह्याद्री निसर्ग बातम्या — पर्वत, प्रवास, संस्कृती आणि निसर्गाच्या बातम्या.</p>
             </div>
             <div>
-              <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>संपर्क</h3>
+              <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>{translations[language].contact}</h3>
               <p>ईमेल: info@sahyadrinews.com<br />फोन: +91 90000 00000</p>
             </div>
             <div>
-              <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>फीडबॅक</h3>
-              <p><a href="/feedback" style={{ color: '#fff', textDecoration: 'underline', cursor: 'pointer' }} onClick={e => { e.preventDefault(); router.push('/feedback'); }}>तुमची प्रतिक्रिया द्या</a></p>
+              <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>{translations[language].feedback}</h3>
+              <p><a href="/feedback" style={{ color: '#fff', textDecoration: 'underline', cursor: 'pointer' }} onClick={e => { e.preventDefault(); router.push('/feedback'); }}>तुमची प्रतिक्रिया द्या {language === 'mr' ? 'तुमची प्रतिक्रिया द्या' : 'Give your feedback'}</a></p>
             </div>
           </div>
           <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', paddingBottom: '18px' }}>
@@ -466,7 +581,7 @@ async function submitReply(parentId: number) {
     <div style={{ background: '#fff', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ fontWeight: 600 }}>प्रतिक्रिया</div>
+          <div style={{ fontWeight: 600 }}>{translations[language].comments}</div>
           <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>{currentNewsTitle}</div>
         </div>
         <button onClick={() => { setCommentsModal(false); setUserName(''); setNewComment(''); setReplyText(''); setReplyTo(null); }} style={{ border: 'none', background: 'transparent', fontSize: '20px', cursor: 'pointer' }}>✕</button>
@@ -474,7 +589,7 @@ async function submitReply(parentId: number) {
       
       <div style={{ padding: '12px 16px', overflowY: 'auto', flex: 1 }}>
         {comments.length === 0 ? (
-          <div style={{ color: '#777' }}>अजून कोणतीही प्रतिक्रिया नाही.</div>
+          <div style={{ color: '#777' }}>{translations[language].noComments}.</div>
         ) : (
           comments.map((c: any) => (
             <div key={c.CommentId}>
@@ -488,7 +603,7 @@ async function submitReply(parentId: number) {
                 </div>
                 <div style={{ marginTop: '6px', fontSize: '14px', lineHeight: '1.5' }}>{c.Text}</div>
                 <div style={{ fontSize: '11px', color: '#888', marginTop: '6px' }}>
-  {getRelativeTime(c.Date)}
+ {getRelativeTime(c.Date, language)}
 </div>
                 
                 {/* Action Buttons */}
@@ -496,7 +611,7 @@ async function submitReply(parentId: number) {
                     onClick={() => setReplyTo(replyTo === c.CommentId ? null : c.CommentId)} 
                     style={{ border: 'none', background: '#e3f2fd', color: '#1976d2', fontSize: '12px', padding: '5px 12px', borderRadius: '6px', cursor: 'pointer', fontWeight: 500 }}
                   >
-                    💬 उत्तर द्या
+                    💬 {translations[language].reply}
                   </button>
                  
                 </div>
@@ -508,7 +623,7 @@ async function submitReply(parentId: number) {
                       type="text" 
                       value={userName} 
                       onChange={e => setUserName(e.target.value)} 
-                      placeholder="तुमचे नाव..." 
+                     placeholder={translations[language].yourName}
                       style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px', marginBottom: '8px' }} 
                     />
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -516,14 +631,18 @@ async function submitReply(parentId: number) {
                         type="text" 
                         value={replyText} 
                         onChange={e => setReplyText(e.target.value)} 
-                        placeholder="तुमचे उत्तर लिहा..." 
+                       placeholder={
+  language === 'mr' 
+    ? 'तुमचे उत्तर लिहा...' 
+    : 'Write your reply...'
+}
                         style={{ flex: 1, padding: '8px 10px', borderRadius: '6px', border: '1px solid #ddd', fontSize: '13px' }} 
                       />
                       <button 
                         onClick={() => submitReply(c.CommentId)} 
                         style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '8px 16px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
                       >
-                        पाठवा
+                        {translations[language].submit}
                       </button>
                     </div>
                   </div>
@@ -541,7 +660,7 @@ async function submitReply(parentId: number) {
                         )}
                       </div>
                       <div style={{ marginTop: '4px', fontSize: '13px', lineHeight: '1.4' }}>{reply.Text}</div>
-                      <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>{getRelativeTime(reply.Date)}</div>
+                      <div style={{ fontSize: '10px', color: '#888', marginTop: '4px' }}>{getRelativeTime(reply.Date, language)}</div>
                     </div>
                   ))}
                 </div>
@@ -557,7 +676,7 @@ async function submitReply(parentId: number) {
           type="text" 
           value={userName} 
           onChange={e => setUserName(e.target.value)} 
-          placeholder="तुमचे नाव..." 
+          placeholder={translations[language].yourName} 
           style={{ width: '100%', padding: '8px 12px', borderRadius: '8px', border: '1px solid #ddd', fontSize: '13px', marginBottom: '8px' }} 
         />
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -565,14 +684,14 @@ async function submitReply(parentId: number) {
             type="text" 
             value={newComment} 
             onChange={e => setNewComment(e.target.value)} 
-            placeholder="तुमची प्रतिक्रिया लिहा..." 
+           placeholder={translations[language].writeComment}
             style={{ flex: 1, padding: '8px 12px', borderRadius: '20px', border: '1px solid #ddd', fontFamily: 'inherit', fontSize: '13px' }} 
           />
           <button 
             onClick={submitComment} 
             style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '8px 18px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}
           >
-            पाठवा
+           {translations[language].submit}
           </button>
         </div>
       </div>
