@@ -14,6 +14,16 @@ export const translations = {
   category: "Category",
   selectCategory: "Select Category",
   breakingEnd: "Breaking End Date/Time",
+about: "About Us",
+  contact: "Contact",
+  feedback: "Feedback",
+   comments: "Comments",
+  noComments: "No comments yet",
+  yourName: "Your Name...",
+  writeComment: "Write your comment...",
+  reply: "Reply",
+  submit: "Submit",
+  noBreaking: "No breaking news available",
 
   },
   mr: {
@@ -31,5 +41,17 @@ export const translations = {
     category: "श्रेणी",
     selectCategory: "श्रेणी निवडा",
     breakingEnd: "ब्रेकिंग समाप्त दिनांक/वेळ",
-  }
+    about: "आमच्याबद्दल",
+   comments: "प्रतिक्रिया",
+  noComments: "अजून कोणतीही प्रतिक्रिया नाही",
+  yourName: "तुमचे नाव...",
+  writeComment: "तुमची प्रतिक्रिया लिहा...",
+  reply: "उत्तर द्या",
+  submit: "पाठवा",
+
+  // ✅ ADD THESE TWO
+  contact: "संपर्क",
+  feedback: "अभिप्राय",
+   noBreaking: "कोणत्याही ब्रेकिंग न्यूज नाहीत",
+}
 } as const;

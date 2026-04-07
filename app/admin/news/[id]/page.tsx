@@ -160,7 +160,7 @@ export default function AdminNewsDetailPage() {
         }}>
           
           <h1 style={{ fontSize: '28px', marginBottom: '10px' }}>
-            {language === 'mr' ? news.Title : "This is English Title"}
+           {news.Title}
           </h1>
 
           <div style={{
@@ -194,7 +194,7 @@ export default function AdminNewsDetailPage() {
               lineHeight: '1.8'
             }}
 dangerouslySetInnerHTML={{
-  __html: language === 'mr' ? news.Content : "This is English Content"
+  __html: news.Content
 }}
           />
 
