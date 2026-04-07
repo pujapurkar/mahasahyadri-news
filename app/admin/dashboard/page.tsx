@@ -41,6 +41,8 @@
     const [currentNewsId, setCurrentNewsId] = useState<number | null>(null);
     const [currentNewsTitle, setCurrentNewsTitle] = useState('');
     const [comments, setComments] = useState<any[]>([]);
+    const [replyTo, setReplyTo] = useState<number | null>(null);
+    const [replyText, setReplyText] = useState('');
     const [newComment, setNewComment] = useState('');
     const [currentSlide, setCurrentSlide] = useState(0);
     const tickerRef = useRef<HTMLDivElement>(null);
@@ -290,6 +292,29 @@ fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
         if (rd.status === 'OK') setComments(rd.comments);
       }
     }
+
+    async function submitReply(parentId: number) {
+  if (!replyText.trim()) {
+    alert('कृपया उत्तर लिहा');
+    return;
+  }
+
+  const res = await fetch(
+    `/api/comments?newsId=${currentNewsId}&commentText=${encodeURIComponent(replyText)}&parentId=${parentId}`,
+    { method: 'POST' }
+  );
+
+  const d = await res.json();
+
+  if (d.status === 'OK') {
+    setReplyText('');
+    setReplyTo(null);
+
+    const r = await fetch(`/api/comments?newsId=${currentNewsId}`);
+    const rd = await r.json();
+    if (rd.status === 'OK') setComments(rd.comments);
+  }
+}
 
     async function deleteComment(cid: number) {
       if (!confirm('ही प्रतिक्रिया delete करायची खात्री आहे का?')) return;
@@ -769,18 +794,18 @@ fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
 
             <span
             onClick={async (e) => {
-    e.stopPropagation();
+              e.stopPropagation();
 
-    const confirmed = window.confirm(`"${c.CategoryName}" delete करायची का?`);
-    if (!confirmed) return;
+              const confirmed = window.confirm(`"${c.CategoryName}" delete करायची का?`);
+              if (!confirmed) return;
 
-    // selected category reset
-    if (String(c.CategoryId) === form.categoryId) {
-      setForm(f => ({ ...f, categoryId: '0' }));
-    }
+              // selected category reset
+              if (String(c.CategoryId) === form.categoryId) {
+                setForm(f => ({ ...f, categoryId: '0' }));
+              }
 
-    await handleDeleteCategory(c.CategoryId);
-  }}
+              await handleDeleteCategory(c.CategoryId);
+            }}
               title="Delete category"
               style={{
                 marginLeft: '10px', color: '#e53935', fontSize: '15px',
@@ -818,48 +843,48 @@ fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
                   <input type="datetime-local" className="form-control" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} />
                 </div>
                 <div className="form-group">
-   <label className="form-label">{t.breakingEnd}</label>
-    <input
-      type="datetime-local"
-      className="form-control"
-      value={form.breakingEnd}
-      onChange={e => setForm({ ...form, breakingEnd: e.target.value })}
-    />
-  </div>
+                <label className="form-label">{t.breakingEnd}</label>
+                  <input
+                    type="datetime-local"
+                    className="form-control"
+                    value={form.breakingEnd}
+                    onChange={e => setForm({ ...form, breakingEnd: e.target.value })}
+                  />
+                </div>
 
                 <div className="form-group" style={{ marginTop: '15px' }}>
-    <label style={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      gap: '12px', 
-      cursor: 'pointer',
-      padding: '14px',
-      background: form.isHero ? '#fff3e0' : '#f8f9fa',
-      borderRadius: '10px',
-      border: form.isHero ? '2px solid #ff9800' : '2px solid #e0e0e0',
-      transition: 'all 0.3s'
-    }}>
-      <input 
-        type="checkbox" 
-        checked={form.isHero}
-        onChange={e => setForm({ ...form, isHero: e.target.checked })}
-        style={{ 
-          width: '22px', 
-          height: '22px', 
-          cursor: 'pointer',
-          accentColor: '#ff9800'
-        }}
-      />
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: '15px', color: form.isHero ? '#e65100' : '#333' }}>
-          {language === 'mr' ? '🎭 सह्याद्रीचे शिलेदार' : '🎭 Sahyadri Heroes'}
-        </div>
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
-          महत्वाच्या व्यक्तींशी संबंधित बातमी
-        </div>
-      </div>
-    </label>
-  </div>
+                <label style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '12px', 
+                  cursor: 'pointer',
+                  padding: '14px',
+                  background: form.isHero ? '#fff3e0' : '#f8f9fa',
+                  borderRadius: '10px',
+                  border: form.isHero ? '2px solid #ff9800' : '2px solid #e0e0e0',
+                  transition: 'all 0.3s'
+                }}>
+              <input 
+                type="checkbox" 
+                checked={form.isHero}
+                onChange={e => setForm({ ...form, isHero: e.target.checked })}
+                style={{ 
+                  width: '22px', 
+                  height: '22px', 
+                  cursor: 'pointer',
+                  accentColor: '#ff9800'
+                }}
+              />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: '15px', color: form.isHero ? '#e65100' : '#333' }}>
+                  {language === 'mr' ? '🎭 सह्याद्रीचे शिलेदार' : '🎭 Sahyadri Heroes'}
+                </div>
+                <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>
+                  महत्वाच्या व्यक्तींशी संबंधित बातमी
+                </div>
+              </div>
+            </label>
+          </div>
 
                 <button type="submit" style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', marginTop: '6px' }}>
                   {editId ? '✔ अपडेट करा' : '✔ प्रकाशित करा'}
@@ -870,56 +895,137 @@ fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
         </div>
 
         {/* Comments Modal */}
-        {commentsModal && (
-          <div style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }} onClick={() => setCommentsModal(false)}>
-            <div style={{ background: '#fff', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <div style={{ fontWeight: 600 }}>प्रतिक्रिया</div>
-                  <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>{currentNewsTitle}</div>
-                </div>
-                <button onClick={() => setCommentsModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '20px', cursor: 'pointer' }}>✕</button>
-              </div>
-              <div style={{ padding: '12px 16px', overflowY: 'auto', flex: 1 }}>
-                {comments.length === 0 ? (
-                  <div style={{ color: '#777' }}>अजून कोणतीही प्रतिक्रिया नाही.</div>
-                ) : (
-                  comments.map((c: any) => (
-                    <div key={c.CommentId} style={{ marginBottom: '10px', padding: '8px', background: '#f9f9f9', borderRadius: '6px', position: 'relative' }}>
-                      <strong>{c.User}</strong>
-                      {c.User === 'Admin' && <span style={{ background: '#27A4F3', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>Admin</span>}
-                      <div style={{ marginTop: '4px' }}>{c.Text}</div>
-                     <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>{getRelativeTime(c.Date, language)}</div>
-                      <button onClick={() => deleteComment(c.CommentId)} style={{ position: 'absolute', top: '8px', right: '8px', border: 'none', background: '#ffebee', color: '#e53935', fontSize: '11px', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer' }}>🗑 Delete</button>
-                      {c.Replies && c.Replies.length > 0 && (
-  <div style={{ marginLeft: '25px', marginTop: '10px' }}>
-    {c.Replies.map((r: any) => (
-      <div key={r.CommentId} style={{
-        background: '#eef6ff',
-        padding: '6px',
-        borderRadius: '5px',
-        marginBottom: '6px'
-      }}>
-        <strong>{r.User}</strong>
-        <div>{r.Text}</div>
-        <div style={{ fontSize: '10px', color: '#666' }}>
-          {getRelativeTime(r.Date, language)}
+{commentsModal && (
+  <div style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }} onClick={() => setCommentsModal(false)}>
+    <div style={{ background: '#fff', borderRadius: '12px', width: '90%', maxWidth: '600px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }} onClick={e => e.stopPropagation()}>
+      
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontWeight: 600 }}>प्रतिक्रिया</div>
+          <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>{currentNewsTitle}</div>
         </div>
+        <button onClick={() => setCommentsModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '20px', cursor: 'pointer' }}>✕</button>
       </div>
-    ))}
+
+      <div style={{ padding: '12px 16px', overflowY: 'auto', flex: 1 }}>
+        {comments.length === 0 ? (
+          <div style={{ color: '#777' }}>अजून कोणतीही प्रतिक्रिया नाही.</div>
+        ) : (
+          comments.map((c: any) => (
+            <div key={c.CommentId} style={{ marginBottom: '12px', padding: '10px', background: '#f9f9f9', borderRadius: '8px' }}>
+              
+              <strong>{c.User}</strong>
+              {c.User === 'Admin' && (
+                <span style={{ background: '#27A4F3', color: '#fff', fontSize: '10px', padding: '2px 6px', borderRadius: '4px', marginLeft: '6px' }}>
+                  Admin
+                </span>
+              )}
+
+              <div style={{ marginTop: '4px' }}>{c.Text}</div>
+              <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                {getRelativeTime(c.Date, language)}
+              </div>
+
+              {/* 🔥 Actions */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: '6px' }}>
+                
+                {/* Reply */}
+                <button
+                  onClick={() => setReplyTo(replyTo === c.CommentId ? null : c.CommentId)}
+                  style={{
+                    border: 'none',
+                    background: '#e3f2fd',
+                    color: '#1976d2',
+                    fontSize: '12px',
+                    padding: '5px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                >
+                  💬 उत्तर द्या
+                </button>
+
+                {/* Delete */}
+                <button
+                  onClick={() => deleteComment(c.CommentId)}
+                  style={{ border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '5px', color: '#e53935', fontSize: '12px' }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e53935" strokeWidth="2">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14H6L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                  </svg>
+                  Delete
+                </button>
+
+              </div>
+
+              {/* 🔥 Reply Input */}
+              {replyTo === c.CommentId && (
+                <div style={{ marginTop: '10px', display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    value={replyText}
+                    onChange={e => setReplyText(e.target.value)}
+                    placeholder="उत्तर लिहा..."
+                    style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: '1px solid #ccc' }}
+                  />
+                  <button
+                    onClick={() => submitReply(c.CommentId)}
+                    style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer' }}
+                  >
+                    पाठवा
+                  </button>
+                </div>
+              )}
+
+              {/* Replies */}
+              {c.Replies && c.Replies.length > 0 && (
+                <div style={{ marginLeft: '25px', marginTop: '10px' }}>
+                  {c.Replies.map((r: any) => (
+                    <div key={r.CommentId} style={{ background: '#eef6ff', padding: '6px', borderRadius: '5px', marginBottom: '6px' }}>
+                      <strong>{r.User}</strong>
+                      <div>{r.Text}</div>
+                      <div style={{ fontSize: '10px', color: '#666' }}>
+                        {getRelativeTime(r.Date, language)}
+                      </div>
+
+                      {/* Delete reply */}
+                      <button
+                        onClick={() => deleteComment(r.CommentId)}
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', marginTop: '4px' }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#e53935" strokeWidth="2">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6l-1 14H6L5 6" />
+                        </svg>
+                      </button>
+
+                    </div>
+                  ))}
+                </div>
+              )}
+
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Bottom input same as it is */}
+      <div style={{ borderTop: '1px solid #eee', padding: '10px 12px', display: 'flex', gap: '8px' }}>
+        <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Admin प्रतिक्रिया लिहा..." style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: '1px solid #ddd', fontFamily: 'inherit', fontSize: '13px' }} />
+        <button onClick={submitComment} style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
+          पाठवा
+        </button>
+      </div>
+
+    </div>
   </div>
 )}
-                    </div>
-                  ))
-                )}
-              </div>
-              <div style={{ borderTop: '1px solid #eee', padding: '10px 12px', display: 'flex', gap: '8px' }}>
-                <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Admin प्रतिक्रिया लिहा..." style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: '1px solid #ddd', fontFamily: 'inherit', fontSize: '13px' }} />
-                <button onClick={submitComment} style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>पाठवा</button>
-              </div>
-            </div>
-          </div>
-        )}
         {/* Category Add Modal */}
   {showCategoryModal && (
     <div className="modal-overlay active" onClick={() => setShowCategoryModal(false)}>
