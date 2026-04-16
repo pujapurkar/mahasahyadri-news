@@ -4,6 +4,10 @@ import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { parseGallery, getRelativeTime } from '@/lib/utils';
 
+
+function toISTDate(dateStr: string): Date {
+  return new Date(dateStr + ':00.000Z');
+}
 // GET - Fetch news by category
 export async function GET(req: Request) {
   try {
@@ -92,8 +96,10 @@ export async function POST(req: Request) {
     }
 
     // Always use current datetime
-  const publishDateTime = date ? new Date(date) : new Date();
-const breakingEndDate = breakingEnd ? new Date(breakingEnd) : null;
+ 
+// IST → UTC convert
+const publishDateTime = date ? toISTDate(date) : new Date();
+const breakingEndDate = breakingEnd ? toISTDate(breakingEnd) : null;
     // Insert into database
     const db = await getDB();
     await db
@@ -169,9 +175,9 @@ export async function PUT(req: Request) {
     }
 
     // Always use current datetime for updates
- const breakingEnd = formData.get('breakingEnd') as string;
-const publishDateTime = date ? new Date(date) : new Date();
-const breakingEndDate = breakingEnd ? new Date(breakingEnd) : null;
+const breakingEnd = formData.get('breakingEnd') as string;
+const publishDateTime = date ? toISTDate(date) : new Date();
+const breakingEndDate = breakingEnd ? toISTDate(breakingEnd) : null;
     // Update database
     await db
       .request()
