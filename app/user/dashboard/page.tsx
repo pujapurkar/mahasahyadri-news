@@ -431,12 +431,14 @@ async function submitReply(parentId: number) {
         {/* Category Pills */}
         <div className="categories">
   {[
-    { label: translations[language].allNews, value: 'all' },
-    ...categories.map(c => ({
+  { label: translations[language].allNews, value: 'all' },
+  ...categories
+    .filter(c => c.NameEn !== 'All News') // ✅ fix
+    .map(c => ({
       label: language === 'mr' ? c.NameMr : c.NameEn,
       value: c.CategoryName
     }))
-  ].map(cat => (
+].map(cat => (
     <button
       key={cat.value}
       className={`category-pill ${activeCategory === cat.value ? 'active' : ''}`}

@@ -534,13 +534,15 @@ function getLocalDateTime() {
     <div className="categories" style={{ flex: 1 }}>
       {[
   { label: t.allNews, value: 'all' },
-  ...categories.map(c => ({
-   label:
-  language === 'mr'
-    ? (c.NameMr || c.CategoryName)
-    : (c.NameEn || c.CategoryName),
-    value: c.CategoryName
-  }))
+  ...categories
+    .filter(c => c.NameEn !== 'All News') // ✅ fix
+    .map(c => ({
+      label:
+        language === 'mr'
+          ? (c.NameMr || c.CategoryName)
+          : (c.NameEn || c.CategoryName),
+      value: c.CategoryName
+    }))
 ].map(cat => (
   <button
     key={cat.value}
