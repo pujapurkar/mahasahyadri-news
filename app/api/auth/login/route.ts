@@ -41,9 +41,9 @@ export async function POST(req: Request) {
 
     // Generate JWT token
     const token = sign(
-      { userId: user.AdminId, username: user.Username },
-      process.env.JWT_SECRET!,
-      { expiresIn: '7d' }
+    { userId: user.AdminId, username: user.Username },
+    process.env.JWT_SECRET!,
+    { expiresIn: '1d' }  // ← 7d se 1d karo
     );
 
     // Set cookie
@@ -51,10 +51,9 @@ export async function POST(req: Request) {
     cookieStore.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 24 * 7,
       path: '/',
+      // ← maxAge hatao, session cookie ban jayegi
     });
-
     return NextResponse.json({
       status: 'OK',
       message: 'Login successful',
