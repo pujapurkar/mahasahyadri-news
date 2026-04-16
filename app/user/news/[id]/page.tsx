@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getMarathiDate, formatDate } from '@/lib/utils';
+import { formatDate, getCurrentDate } from '@/lib/utils';
+import { useLanguage } from '@/lib/LanguageContext';
+import { translations } from '@/lib/translations';
 
 interface NewsDetail {
   Id: number;
@@ -12,26 +14,40 @@ interface NewsDetail {
   CategoryName: string;
   Gallery: string[];
 }
-
+interface Category {
+  CategoryId: number;
+  CategoryName: string;
+  NameMr: string;
+  NameEn: string;
+}
 export default function UserNewsDetailPage() {
   const params = useParams();
   const id = params?.id;
   const router = useRouter();
+  const { language, setLanguage } = useLanguage();
   const [news, setNews] = useState<NewsDetail | null>(null);
   const [mainImage, setMainImage] = useState('');
-  const [marathiDate, setMarathiDate] = useState('');
+ 
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
-
+  const [categories, setCategories] = useState<Category[]>([]);
   const hasFetched = useRef(false);
 
 useEffect(() => {
-  setMarathiDate(getMarathiDate());
   if (id && !hasFetched.current) {
     fetchNews();
+    fetchCategories(); // ← हे add करा
     hasFetched.current = true;
   }
 }, [id]);
+
+async function fetchCategories() {
+  try {
+    const res = await fetch('/api/categories');
+    const data = await res.json();
+    if (data.status === 'OK') setCategories(data.data);
+  } catch (e) { console.error(e); }
+}
 
   async function fetchNews() {
   try {
@@ -108,11 +124,31 @@ useEffect(() => {
       <div className="header">
         <div className="container">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
-            <div style={{ fontSize: '24px', fontWeight: 700, cursor: 'pointer' }} onClick={() => router.push('/user/dashboard')}>
-              🏔️ महासह्याद्री
-            </div>
-            <div style={{ fontSize: '13px' }}>{marathiDate}</div>
-          </div>
+  <div style={{ fontSize: '24px', fontWeight: 700, cursor: 'pointer' }} onClick={() => router.push('/user/dashboard')}>
+    🏔️ {translations[language].title}
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
+    <span>{getCurrentDate(language)}</span>
+    <span>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
+    <select
+      value={language}
+      onChange={(e) => setLanguage(e.target.value as 'mr' | 'en')}
+      style={{
+        borderRadius: '6px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#000',
+        padding: '2px 6px',
+        cursor: 'pointer',
+        outline: 'none',
+        fontSize: '13px'
+      }}
+    >
+      <option value="en">English</option>
+      <option value="mr">मराठी</option>
+    </select>
+  </div>
+</div>
         </div>
       </div>
 
@@ -129,11 +165,14 @@ useEffect(() => {
           <h1 className="news-title">{news.Title}</h1>
 
           <div className="news-meta">
-           <span>📅 {formatDate(news.PublishDate, 'mr')}</span>
+         <span>📅 {formatDate(news.PublishDate, language)}</span>
             <span>|</span>
             <span>👤 {news.Author}</span>
             <span>|</span>
-            <span>🏷️ {news.CategoryName}</span>
+           <span>🏷️ {(() => {
+  const cat = categories.find(c => c.CategoryName === news.CategoryName);
+  return language === 'mr' ? (cat?.NameMr || news.CategoryName) : (cat?.NameEn || news.CategoryName);
+})()}</span>
           </div>
 
           {mainImage && (

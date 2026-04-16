@@ -73,12 +73,12 @@
       try {
         const [newsRes, breakRes, sliderRes, catRes, mvRes, heroRes, vivRes] = await Promise.all([
         fetch(`/api/news?category=${cat === 'all' ? '' : encodeURIComponent(cat)}&lang=${language}`),
-          fetch('/api/news/breaking'),
+         fetch(`/api/news/breaking?lang=${language}`),
           fetch('/api/news/slider'),
           fetch('/api/categories'),
-          fetch('/api/news/most-viewed'),
+          fetch(`/api/news/most-viewed?lang=${language}`),
           fetch('/api/news/heroes'),
-          fetch('/api/news/vividha'),
+         fetch(`/api/news/vividha?lang=${language}`),
         ]);
         const [nd, bd, sd, cd, mv, hd, vd] = await Promise.all([
           newsRes.json(), breakRes.json(), sliderRes.json(),
@@ -154,9 +154,11 @@ fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
         if (d.status === 'OK') {
           const n = d.data;
           setForm({ headline: n.Title, content: n.Content, categoryId: String(n.CategoryId), author: n.Author, 
-         date: n.PublishDate
-  ? new Date(new Date(n.PublishDate).getTime() + (5.5 * 60 * 60 * 1000))
-      .toISOString().slice(0, 16)
+        date: n.PublishDate
+  ? new Date(
+      new Date(n.PublishDate).getTime() -
+      new Date().getTimezoneOffset() * 60000
+    ).toISOString().slice(0, 16)
   : '',
      breakingEnd: n.BreakingEndDate 
     ? new Date(n.BreakingEndDate).toISOString().slice(0,16)
@@ -165,11 +167,24 @@ fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
         }
       } else {
         setEditId(null);
-        setForm({ headline: '', content: '', categoryId: '0', author: '', date: new Date(Date.now() + (5.5 * 60 * 60 * 1000)).toISOString().slice(0, 16), breakingEnd: '', isHero: false });
+        setForm({
+  headline: '',
+  content: '',
+  categoryId: '0',
+  author: '',
+  date: getLocalDateTime(),
+  breakingEnd: '',
+  isHero: false
+});
       }
       setModalOpen(true);
     }
-
+function getLocalDateTime() {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  const local = new Date(now.getTime() - offset);
+  return local.toISOString().slice(0, 16);
+}
     // ---- Handle image select ----
     function handleImages(e: React.ChangeEvent<HTMLInputElement>) {
       const files = Array.from(e.target.files || []);
@@ -687,14 +702,40 @@ fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
         <div className="footer">
           <div className="container">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '24px', padding: '20px 0' }}>
-              <div><h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>{language === 'mr' ? 'आमच्याबद्दल' : 'About Us'}</h3><p>सह्याद्री निसर्ग बातम्या — पर्वत, प्रवास, संस्कृती आणि निसर्गाच्या बातम्या.</p></div>
-              <div><h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>संपर्क</h3><p>ईमेल: info@sahyadrinews.com<br />फोन: +91 90000 00000</p></div>
-              <div><h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>आमचे अनुसरण करा</h3><p><a href="#" style={{ color: '#fff' }}>फेसबुक</a> • <a href="#" style={{ color: '#fff' }}>इंस्टाग्राम</a> • <a href="#" style={{ color: '#fff' }}>ट्विटर</a></p></div>
+             <div>
+  <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>
+    {t.about}
+  </h3>
+  <p>{t.aboutDesc}</p>
+</div>
+
+<div>
+  <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>
+    {t.contact}
+  </h3>
+  <p>
+    {t.email}: info@sahyadrinews.com <br />
+    {t.phone}: +91 90000 00000
+  </p>
+</div>
+
+<div>
+  <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>
+    {t.follow}
+  </h3>
+  <p>
+    <a href="#" style={{ color: '#fff' }}>{t.facebook}</a> • 
+    <a href="#" style={{ color: '#fff' }}>{t.instagram}</a> • 
+    <a href="#" style={{ color: '#fff' }}>{t.twitter}</a>
+  </p>
+</div>
             </div>
             <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', paddingBottom: '18px' }}>
-              © <span id="footerYear">{language === 'mr'
-  ? toMarathiDigits(new Date().getFullYear().toString())
-  : new Date().getFullYear()}</span> सह्याद्री निसर्ग बातम्या. सर्व हक्क राखीव.
+             © <span id="footerYear">
+          {language === 'mr'
+            ? toMarathiDigits(new Date().getFullYear().toString())
+            : new Date().getFullYear()}
+        </span> {t.title}. {t.copyright}
             </div>
           </div>
         </div>

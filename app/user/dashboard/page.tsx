@@ -61,8 +61,13 @@ export default function UserDashboard() {
   useEffect(() => {
   
     fetchAllData('all');
-    const el = document.getElementById('footerYear');
-    if (el) el.textContent = toMarathiDigits(new Date().getFullYear().toString());
+   const el = document.getElementById('footerYear');
+if (el) {
+  el.textContent =
+    language === 'mr'
+      ? toMarathiDigits(new Date().getFullYear().toString())
+      : new Date().getFullYear().toString();
+}
   }, []);
 
   useEffect(() => {
@@ -86,9 +91,9 @@ const [
        fetch(`/api/news/breaking?lang=${language}`),
         fetch('/api/news/slider'),
         fetch('/api/categories'),
-        fetch('/api/news/most-viewed'),
-        fetch('/api/news/heroes'),
-        fetch('/api/news/vividha'),
+       fetch(`/api/news/most-viewed?lang=${language}`),
+      fetch(`/api/news/heroes?lang=${language}`),
+       fetch(`/api/news/vividha?lang=${language}`),
       ]);
       const [nd, bd, sd, cd, mv, hd, vd] = await Promise.all([
         newsRes.json(), breakRes.json(), sliderRes.json(),
@@ -558,19 +563,22 @@ async function submitReply(parentId: number) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '24px', padding: '20px 0' }}>
             <div>
               <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>{translations[language].about}</h3>
-              <p>सह्याद्री निसर्ग बातम्या — पर्वत, प्रवास, संस्कृती आणि निसर्गाच्या बातम्या.</p>
+              <p>{translations[language].aboutDesc}</p>
             </div>
             <div>
               <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>{translations[language].contact}</h3>
-              <p>ईमेल: info@sahyadrinews.com<br />फोन: +91 90000 00000</p>
+             <p>
+              {translations[language].email}: info@sahyadrinews.com <br />
+              {translations[language].phone}: +91 90000 00000
+            </p>
             </div>
             <div>
               <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>{translations[language].feedback}</h3>
-              <p><a href="/feedback" style={{ color: '#fff', textDecoration: 'underline', cursor: 'pointer' }} onClick={e => { e.preventDefault(); router.push('/feedback'); }}>तुमची प्रतिक्रिया द्या {language === 'mr' ? 'तुमची प्रतिक्रिया द्या' : 'Give your feedback'}</a></p>
+              <p><a href="/feedback" style={{ color: '#fff', textDecoration: 'underline', cursor: 'pointer' }} onClick={e => { e.preventDefault(); router.push('/feedback'); }}>{language === 'mr' ? 'तुमची प्रतिक्रिया द्या' : 'Give your feedback'}</a></p>
             </div>
           </div>
           <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', paddingBottom: '18px' }}>
-            © <span id="footerYear"></span> सह्याद्री निसर्ग बातम्या. सर्व हक्क राखीव.
+           © <span id="footerYear"></span> {translations[language].title}. {translations[language].copyright}
           </div>
         </div>
       </div>
