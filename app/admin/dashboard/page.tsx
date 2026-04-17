@@ -74,7 +74,7 @@
         const [newsRes, breakRes, sliderRes, catRes, mvRes, heroRes, vivRes] = await Promise.all([
         fetch(`/api/news?category=${cat === 'all' ? '' : encodeURIComponent(cat)}&lang=${language}`),
          fetch(`/api/news/breaking?lang=${language}`),
-          fetch('/api/news/slider'),
+          fetch(`/api/news/slider?lang=${language}`),
           fetch('/api/categories'),
           fetch(`/api/news/most-viewed?lang=${language}`),
           fetch('/api/news/heroes'),

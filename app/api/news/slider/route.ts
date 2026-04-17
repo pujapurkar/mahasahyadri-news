@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server';
 import { getDB } from '@/lib/db';
 import { parseGallery, getRelativeTime, truncateText } from '@/lib/utils';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const lang = (searchParams.get('lang') || 'mr') as 'mr' | 'en';
+
     const db = await getDB();
 
-    // Get latest 7 news that are already published (PublishDate <= now)
     let result = await db.request().query(`
       SELECT TOP 7 
         NA.Id, NA.Title, NA.Content, NA.PublishDate,
@@ -19,13 +21,18 @@ export async function GET() {
 
     const data = result.recordset.map((r: any) => {
       const gallery = parseGallery(r.Gallery);
+
+      // ✅ IST Timezone fix
+      const publishDate = new Date(r.PublishDate);
+      const istDate = new Date(publishDate.getTime() + (5.5 * 60 * 60 * 1000));
+
       return {
         Id: r.Id,
         Title: r.Title,
         Excerpt: truncateText(r.Content, 150),
         Category: r.CategoryName || 'विविध',
         Author: r.Author,
-        TimeAgo: getRelativeTime(r.PublishDate, 'mr'),
+        TimeAgo: getRelativeTime(istDate.toISOString(), lang), // ✅ fixed
         HeroImage: gallery[0] || '/images/no-image.jpg',
       };
     });

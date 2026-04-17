@@ -89,7 +89,7 @@ const [
 ] = await Promise.all([
   fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`),
        fetch(`/api/news/breaking?lang=${language}`),
-        fetch('/api/news/slider'),
+        fetch(`/api/news/slider?lang=${language}`),
         fetch('/api/categories'),
        fetch(`/api/news/most-viewed?lang=${language}`),
       fetch(`/api/news/heroes?lang=${language}`),
