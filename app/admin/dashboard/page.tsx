@@ -190,10 +190,21 @@ function getLocalDateTime() {
 }
     // ---- Handle image select ----
     function handleImages(e: React.ChangeEvent<HTMLInputElement>) {
-      const files = Array.from(e.target.files || []);
-      setImages(files);
-      setPreviews(files.map(f => URL.createObjectURL(f)));
+    const files = Array.from(e.target.files || []);
+  
+    // ✅ 300KB size check
+    const maxSize = 300 * 1024; // 300KB
+    const oversized = files.filter(f => f.size > maxSize);
+  
+    if (oversized.length > 0) {
+      alert(`❌ Image size 300KB se kam honi chahiye!\n\nYe images bahut badi hain:\n${oversized.map(f => `• ${f.name} (${(f.size / 1024).toFixed(1)} KB)`).join('\n')}`);
+      e.target.value = ''; // input reset
+      return;
     }
+
+    setImages(files);
+    setPreviews(files.map(f => URL.createObjectURL(f)));
+  }
 
     // ---- Submit news ----
     async function handleSubmit(e: React.FormEvent) {

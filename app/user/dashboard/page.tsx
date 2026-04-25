@@ -56,6 +56,9 @@ export default function UserDashboard() {
   const [replyTo, setReplyTo] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [userName, setUserName] = useState(''); // User's name for comment
+  const [feedbackModal, setFeedbackModal] = useState(false);
+  const [feedbackForm, setFeedbackForm] = useState({ name: '', email: '', message: '' });
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
   
   // ---- Load all data ----
   useEffect(() => {
@@ -291,6 +294,32 @@ async function submitReply(parentId: number) {
 ); }
   }
 
+  async function submitFeedback() {
+  if (!feedbackForm.name.trim() || !feedbackForm.email.trim() || !feedbackForm.message.trim()) {
+    alert(language === 'mr' ? 'कृपया सर्व माहिती भरा.' : 'Please fill all fields.');
+    return;
+  }
+  setFeedbackLoading(true);
+  try {
+    const res = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(feedbackForm),
+    });
+    const d = await res.json();
+    if (d.status === 'OK') {
+      alert(language === 'mr' ? '✅ फीडबॅक यशस्वीरित्या पाठवला!' : '✅ Feedback submitted successfully!');
+      setFeedbackModal(false);
+      setFeedbackForm({ name: '', email: '', message: '' });
+    } else {
+      alert(language === 'mr' ? '❌ त्रुटी: ' + d.message : '❌ Error: ' + d.message);
+    }
+  } catch {
+    alert(language === 'mr' ? 'काहीतरी चुकले!' : 'Something went wrong!');
+  } finally {
+    setFeedbackLoading(false);
+  }
+}
  
   return (
     <>
@@ -361,7 +390,13 @@ async function submitReply(parentId: number) {
         <div className="container">
           <div className="header-content">
             <div className="site-title" onClick={() => router.push('/user/dashboard')}>
-              🏔️ {translations[language].title}
+              <img 
+                src="/images/Mahasahyadri.png" 
+                alt="Maha Sahyadri" 
+                style={{ height: '48px', width: 'auto', filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              {translations[language].title}
             </div>
             <div style={{ textAlign: 'right' }}>
             <div style={{ 
@@ -590,7 +625,34 @@ async function submitReply(parentId: number) {
             </div>
             <div>
               <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>{translations[language].feedback}</h3>
-              <p><a href="/feedback" style={{ color: '#fff', textDecoration: 'underline', cursor: 'pointer' }} onClick={e => { e.preventDefault(); router.push('/feedback'); }}>{language === 'mr' ? 'तुमची प्रतिक्रिया द्या' : 'Give your feedback'}</a></p>
+              <p>
+  <a 
+    href="#" 
+    onClick={e => { e.preventDefault(); setFeedbackModal(true); }}
+    style={{ 
+      color: '#fff', 
+      textDecoration: 'none', 
+      cursor: 'pointer',
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: '8px',
+      background: 'rgba(255,255,255,0.15)',
+      padding: '8px 16px',
+      borderRadius: '20px',
+      fontSize: '13px',
+      fontWeight: 600,
+      border: '1px solid rgba(255,255,255,0.3)',
+      transition: 'all 0.3s',
+    }}
+    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.25)')}
+    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.15)')}
+  >
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+    {language === 'mr' ? 'तुमची प्रतिक्रिया द्या' : 'Give your feedback'}
+  </a>
+</p>
             </div>
           </div>
           <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.7)', paddingBottom: '18px' }}>
@@ -722,6 +784,89 @@ async function submitReply(parentId: number) {
     </div>
   </div>
 )}
+
+
+{/* Feedback Modal */}
+{feedbackModal && (
+  <div 
+    style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 9999, justifyContent: 'center', alignItems: 'center' }} 
+    onClick={() => setFeedbackModal(false)}
+  >
+    <div 
+      style={{ background: '#fff', borderRadius: '16px', width: '90%', maxWidth: '480px', overflow: 'hidden', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }} 
+      onClick={e => e.stopPropagation()}
+    >
+      {/* Header */}
+      <div style={{ background: 'linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%)', color: '#fff', padding: '18px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ fontSize: '18px', fontWeight: 700 }}>
+            📝 {language === 'mr' ? 'फीडबॅक' : 'Feedback'}
+          </div>
+          <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '2px' }}>
+            {language === 'mr' ? 'तुमचा अभिप्राय आम्हाला द्या' : 'Share your feedback with us'}
+          </div>
+        </div>
+        <button 
+          onClick={() => setFeedbackModal(false)} 
+          style={{ border: 'none', background: 'rgba(255,255,255,0.2)', color: '#fff', width: '32px', height: '32px', borderRadius: '50%', fontSize: '18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >✕</button>
+      </div>
+
+      {/* Body */}
+      <div style={{ padding: '20px' }}>
+        <div style={{ marginBottom: '14px' }}>
+          <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '6px', color: '#333' }}>
+            {language === 'mr' ? 'नाव' : 'Name'}
+          </label>
+          <input 
+            type="text" 
+            value={feedbackForm.name}
+            onChange={e => setFeedbackForm({ ...feedbackForm, name: e.target.value })}
+            placeholder={language === 'mr' ? 'तुमचे नाव' : 'Your name'}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e0e0e0', fontSize: '14px', fontFamily: 'inherit', outline: 'none' }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '14px' }}>
+          <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '6px', color: '#333' }}>
+            {language === 'mr' ? 'ईमेल' : 'Email'}
+          </label>
+          <input 
+            type="email" 
+            value={feedbackForm.email}
+            onChange={e => setFeedbackForm({ ...feedbackForm, email: e.target.value })}
+            placeholder="your@email.com"
+            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e0e0e0', fontSize: '14px', fontFamily: 'inherit', outline: 'none' }}
+          />
+        </div>
+
+        <div style={{ marginBottom: '20px' }}>
+          <label style={{ display: 'block', fontWeight: 600, fontSize: '13px', marginBottom: '6px', color: '#333' }}>
+            {language === 'mr' ? 'संदेश' : 'Message'}
+          </label>
+          <textarea 
+            value={feedbackForm.message}
+            onChange={e => setFeedbackForm({ ...feedbackForm, message: e.target.value })}
+            placeholder={language === 'mr' ? 'तुमचा अभिप्राय येथे लिहा...' : 'Write your feedback here...'}
+            rows={4}
+            style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e0e0e0', fontSize: '14px', fontFamily: 'inherit', outline: 'none', resize: 'vertical' }}
+          />
+        </div>
+
+        <button 
+          onClick={submitFeedback}
+          disabled={feedbackLoading}
+          style={{ width: '100%', padding: '12px', background: feedbackLoading ? '#90caf9' : 'linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: feedbackLoading ? 'not-allowed' : 'pointer' }}
+        >
+          {feedbackLoading 
+            ? (language === 'mr' ? 'पाठवत आहे...' : 'Sending...') 
+            : (language === 'mr' ? '✔ पाठवा' : '✔ Submit')}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </>
   );
 }
