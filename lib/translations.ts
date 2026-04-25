@@ -32,7 +32,8 @@ phone: "Phone",
 facebook: "Facebook",
 instagram: "Instagram",
 twitter: "Twitter",
-
+publish: "Publish",
+  update: "Update",
   },
   mr: {
     title: "महासह्याद्री",
@@ -69,5 +70,7 @@ twitter: "Twitter",
     facebook: "फेसबुक",
     instagram: "इंस्टाग्राम",
     twitter: "ट्विटर",
+    publish: "प्रकाशित करा",
+    update: "अपडेट करा",
 }
 } as const;

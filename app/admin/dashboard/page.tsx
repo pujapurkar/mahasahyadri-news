@@ -4,6 +4,8 @@
   import { getCurrentDate, getRelativeTime, formatDate, parseGallery, truncateText, toMarathiDigits } from '@/lib/utils';
   import { useLanguage } from '@/lib/LanguageContext';
   import { translations } from '@/lib/translations';
+  
+  
   interface NewsItem {
     Id: number;
     Title: string;
@@ -52,6 +54,7 @@
     const [catMr, setCatMr] = useState('');
     const [catEn, setCatEn] = useState('');
     const { language, setLanguage } = useLanguage();
+    const [hover, setHover] = useState(false);
     const t = translations[language as 'en' | 'mr'];
     const categoryMap: Record<string, string> = Object.fromEntries(
     categories.map(c => [
@@ -588,16 +591,23 @@ function getLocalDateTime() {
                         onError={e => { (e.target as HTMLImageElement).src = '/images/placeholder.jpg'; }} 
                       />
                     ) : (
-                      <div style={{ 
-                        width: '100%', 
-                        height: '100%', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center',
-                        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-                        color: '#666',
-                        fontSize: '14px'
-                      }}>
+                      <div
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+            style={{ 
+              width: '100%', 
+              height: '100%', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center',
+              background: hover
+                ? 'linear-gradient(135deg, #dfe9f3 0%, #a6bcd6 100%)'   // 🔥 DARK
+                : 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)', // normal
+              color: '#666',
+              fontSize: '14px',
+              transition: '0.3s ease'
+            }}
+          >
                         {language === 'mr' ? '📷 छायाचित्र उपलब्ध नाही' : '📷 No Image Available'}
                       </div>
                     )}
@@ -930,7 +940,7 @@ function getLocalDateTime() {
           </div>
 
                 <button type="submit" style={{ width: '100%', padding: '12px', background: 'linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%)', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '15px', fontWeight: 600, cursor: 'pointer', marginTop: '6px' }}>
-                  {editId ? '✔ अपडेट करा' : '✔ प्रकाशित करा'}
+                  {editId ? `✔ ${t.update}` : `✔ ${t.publish}`}
                 </button>
               </form>
             </div>

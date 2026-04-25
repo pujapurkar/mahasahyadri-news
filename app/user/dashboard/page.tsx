@@ -365,23 +365,37 @@ async function submitReply(parentId: number) {
             </div>
             <div style={{ textAlign: 'right' }}>
             <div style={{ 
-  display: 'flex', 
-  alignItems: 'center', 
-  gap: '10px',
-  fontSize: '12px'
-}}>
-  <span>{getCurrentDate(language)}</span>
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '10px',
+            fontSize: '12px'
+          }}>
+            <span>{getCurrentDate(language)}</span>
 
-  <span>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
+            <span>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
 
-  <select
-    value={language}
-    onChange={(e) => setLanguage(e.target.value as 'mr' | 'en')}
-  >
-    <option value="mr">Marathi</option>
-    <option value="en">English</option>
-  </select>
-</div>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as 'en' | 'mr')}
+            style={{
+              padding: '6px 10px',
+              borderRadius: '6px',
+              border: '1px solid #ccc',
+              backgroundColor: '#fff',   // ✅ important
+              color: '#000',             // ✅ important (text visible)
+              fontWeight: '500',
+              cursor: 'pointer'
+            }}
+          >
+              <option value="en" style={{ color: '#000' }}>
+            English
+          </option>
+
+          <option value="mr" style={{ color: '#000' }}>
+            मराठी
+          </option>
+            </select>
+          </div>
             </div>
           </div>
           <div className="breaking-news" style={{ marginTop: '14px' }}>
