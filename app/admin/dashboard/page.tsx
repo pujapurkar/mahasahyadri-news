@@ -1,4 +1,4 @@
-  'use client';
+'use client';
   import { useState, useEffect, useRef } from 'react';
   import { useRouter } from 'next/navigation';
   import { getCurrentDate, getRelativeTime, formatDate, parseGallery, truncateText, toMarathiDigits } from '@/lib/utils';
@@ -370,13 +370,13 @@ function getLocalDateTime() {
           body { font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e8f4f8 100%); color: #333; font-size: 14px; overflow-x: hidden; }
           @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&family=Poppins:wght@300;400;500;600;700&display=swap');
           .container { max-width: 1400px; margin: 0 auto; padding: 0 12px; width: 100%; }
-          .top-header { background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: white; padding: 12px 0 10px; box-shadow: 0 2px 10px rgba(39,164,243,0.3); }
-          .header-content { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
-          .site-title { font-size: 18px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px; }
-          .site-logo { height: 32px; width: auto; max-width: 200px; filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.2)); transition: transform 0.3s ease; }
+        .top-header { background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: white; padding: 12px 16px 10px; box-shadow: 0 2px 10px rgba(39,164,243,0.3); }/* Replace your header-content line with: */
+.header-content { display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 8px; padding: 0; margin: 0; }          .site-title { font-size: 18px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 4px; }
+
           .site-logo:hover { transform: scale(1.05); }
-          .breaking-news { background: rgba(255,255,255,0.15); padding: 8px 10px; border-radius: 8px; overflow: hidden; position: relative; backdrop-filter: blur(6px); margin-top: 10px; font-size: 12px; width: 100vw; margin-left: calc(50% - 50vw); }
-          .breaking-label { font-weight: 600; margin-right: 8px; display: inline-block; color: #fff; min-width: 120px; }
+          /* ✅ ADD this line after .site-title rule: */
+.       site-logo { height: 70px; width: auto; transition: transform 0.3s ease; }
+.breaking-news { background: rgba(255,255,255,0.15); padding: 8px 20px; border-radius: 8px; overflow: hidden; position: relative; backdrop-filter: blur(6px); margin-top: 10px; font-size: 12px; width: 100%; margin-left: 0; }          .breaking-label { font-weight: 600; margin-right: 8px; display: inline-block; color: #fff; min-width: 120px; }
           .news-ticker-wrapper { overflow: hidden; display: inline-block; width: calc(100% - 0px); vertical-align: middle; }
           .news-ticker { display: inline-flex; gap: 40px; white-space: nowrap; will-change: transform; }
           .news-ticker span { display: inline-block; font-weight: 500; color: #fff; }
@@ -438,8 +438,7 @@ function getLocalDateTime() {
           .image-preview { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
           .image-preview img { width: 70px; height: 70px; border-radius: 6px; object-fit: cover; }
           @media (min-width: 768px) {
-            .header-content { flex-direction: row; align-items: center; justify-content: space-between; }
-            .site-title { font-size: 22px; }
+           .site-title { font-size: 22px; justify-content: flex-start; }
             .hero-slider { margin: 20px 0 24px; aspect-ratio: 16/8; }
             .categories { overflow-x: visible; flex-wrap: wrap; }
             .main-layout { grid-template-columns: minmax(0, 2.2fr) minmax(0, 1fr); gap: 24px; }
@@ -452,14 +451,15 @@ function getLocalDateTime() {
         `}</style>
         {/* Header */}
         <div className="top-header">
-          <div className="container">
-            <div className="header-content">
+        <div className="header-content"> 
               <div className="site-title">
-                <img src="/images/Mahasahyadri.png" alt="Maha Sahyadri" className="site-logo" onError={e => { (e.target as HTMLImageElement).style.display='none'; }} />
-                <span>
-{t.title}  </span>
+              <img src="/images/Mahasahyadri.png" alt="MahaSahyadri" className="site-logo" 
+                style={{ height: '70px', width: 'auto', filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
+                onError={e => { (e.target as HTMLImageElement).style.display='none'; }} 
+              />
+              <span>MahaSahyadri</span>
               </div>
-     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
 
   {/* Date */}
   <div style={{ fontSize: '12px', fontWeight: 500 }}>
@@ -494,9 +494,7 @@ function getLocalDateTime() {
         <option value="en">English</option>
         <option value="mr">मराठी</option>
       </select>
-
     </div>
-
   </div>
             </div>
             <div className="breaking-news" style={{ marginTop: '14px' }}>
@@ -508,8 +506,7 @@ function getLocalDateTime() {
               </div>
             </div>
           </div>
-        </div>
-
+        
         <div className="container">
           {/* Hero Slider */}
           <div className="hero-slider">
@@ -737,8 +734,8 @@ function getLocalDateTime() {
     {t.contact}
   </h3>
   <p>
-    {t.email}: info@sahyadrinews.com <br />
-    {t.phone}: +91 90000 00000
+    {t.email}: mahasahyadri.press@gmail.com <br />
+    {t.phone}: +91 9881131059
   </p>
 </div>
 

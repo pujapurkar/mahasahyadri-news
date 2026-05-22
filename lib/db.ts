@@ -1,36 +1,39 @@
-import sql from 'mssql';
+import { Pool } from 'pg';
 
-const config: sql.config = {
-  server: process.env.DB_SERVER || 'localhost',
-  database: process.env.DB_NAME || 'NewsDB',
-  options: {
-    encrypt: false,
-    trustServerCertificate: true,
-    enableArithAbort: true,
-    trustedConnection: true,  // ← YEH ADD KARO
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
   },
-  pool: {
-    max: 10,
-    min: 0,
-    idleTimeoutMillis: 30000,
-  },
-};
+  max: 3,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 10000,
+});
 
-// Check if SQL Authentication or Windows Authentication
-if (process.env.DB_USER && process.env.DB_PASSWORD) {
-  // SQL Server Authentication
-  config.user = process.env.DB_USER;
-  config.password = process.env.DB_PASSWORD;
-}
-// For Windows Authentication, no user/password needed with trustedConnection: true
+// ❌ pool.on('connect') wali line bilkul hata do!
 
-let pool: sql.ConnectionPool | null = null;
-
-export async function getDB(): Promise<sql.ConnectionPool> {
-  if (!pool) {
-    pool = await new sql.ConnectionPool(config).connect();
-  }
+export async function getDB() {
   return pool;
 }
 
-export { sql };
+export async function query(text: string, params?: any[]) {
+  let retries = 3;
+  while (retries > 0) {
+    try {
+      const client = await pool.connect();
+      try {
+        const result = await client.query(text, params);
+        return result;
+      } finally {
+        client.release();
+      }
+    } catch (err: any) {
+      retries--;
+      if (retries === 0) throw err;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+  throw new Error('Query failed after retries');
+}
+
+export { pool };

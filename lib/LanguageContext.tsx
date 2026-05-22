@@ -5,16 +5,15 @@ type Lang = 'en' | 'mr';
 type LanguageContextType = { language: Lang; setLanguage: (lang: Lang) => void; };
 
 const LanguageContext = createContext<LanguageContextType>({
-  language: 'mr',
+  language: 'en',           // ← default 'en' करा
   setLanguage: () => {},
 });
 
 export const LanguageProvider = ({ children }: { children: React.ReactNode }) => {
-  const [language, setLanguageState] = useState<Lang>('mr'); // always 'mr' on server
+  const [language, setLanguageState] = useState<Lang>('en'); // ← 'en' default
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    // runs only on client, after mount
     const stored = localStorage.getItem('lang') as Lang | null;
     if (stored === 'en' || stored === 'mr') {
       setLanguageState(stored);
@@ -24,14 +23,15 @@ export const LanguageProvider = ({ children }: { children: React.ReactNode }) =>
 
   const setLanguage = (lang: Lang) => {
     setLanguageState(lang);
-    localStorage.setItem('lang', lang); // write immediately, don't rely on useEffect
+    localStorage.setItem('lang', lang);
   };
 
-  if (!hydrated) return null; // prevent flash of wrong language
-
+  // ✅ null नाही — children render करा, फक्त hide करा flash होऊ नये म्हणून
   return (
     <LanguageContext.Provider value={{ language, setLanguage }}>
-      {children}
+      <div style={{ visibility: hydrated ? 'visible' : 'hidden' }}>
+        {children}
+      </div>
     </LanguageContext.Provider>
   );
 };

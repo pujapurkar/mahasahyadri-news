@@ -1,20 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getDB } from '@/lib/db';
+import { query } from '@/lib/db';
 
-// ✅ GET Categories
+// GET Categories
 export async function GET() {
   try {
-    const db = await getDB();
-
-   const result = await db.request().query(`
-  SELECT CategoryId, CategoryName, NameMr, NameEn 
-  FROM Categories 
-  ORDER BY CategoryId ASC
-`);
+    const result = await query(`
+      SELECT "CategoryId", "CategoryName", "NameMr", "NameEn" 
+      FROM "Categories" 
+      ORDER BY "CategoryId" ASC
+    `);
 
     return NextResponse.json({
       status: 'OK',
-      data: result.recordset
+      data: result.rows
     });
 
   } catch (e: any) {
@@ -26,13 +24,12 @@ export async function GET() {
   }
 }
 
-// ✅ ADD Category (NEW 🔥)
+// ADD Category
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { nameMr, nameEn } = body;
 
-    // validation
     if (!nameMr || nameMr.trim() === '') {
       return NextResponse.json({
         status: 'ERR',
@@ -40,29 +37,25 @@ export async function POST(req: Request) {
       });
     }
 
-    const db = await getDB();
+    // Duplicate check
+    const check = await query(
+      `SELECT * FROM "Categories" WHERE "CategoryName" = $1`,
+      [nameMr]
+    );
 
-    // 🔥 Duplicate check
-    const check = await db.request()
-      .input('name', nameMr)
-      .query(`SELECT * FROM Categories WHERE CategoryName = @name`);
-
-    if (check.recordset.length > 0) {
+    if (check.rows.length > 0) {
       return NextResponse.json({
         status: 'ERR',
         message: 'Category already exists'
       });
     }
 
-    // 🔥 Insert
-    await db.request()
-  .input('categoryName', nameMr)
-  .input('nameMr', nameMr)
-  .input('nameEn', nameEn || '')
-  .query(`
-    INSERT INTO Categories (CategoryName, NameMr, NameEn)
-    VALUES (@categoryName, @nameMr, @nameEn)
-  `);
+    // Insert
+    await query(
+      `INSERT INTO "Categories" ("CategoryName", "NameMr", "NameEn")
+       VALUES ($1, $2, $3)`,
+      [nameMr, nameMr, nameEn || '']
+    );
 
     return NextResponse.json({ status: 'OK' });
 
@@ -74,6 +67,7 @@ export async function POST(req: Request) {
   }
 }
 
+// DELETE Category
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -83,11 +77,10 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ status: 'ERR', message: 'Id required' });
     }
 
-    const db = await getDB();
-
-    await db.request()
-      .input('id', Number(id)) // 🔥 FIX
-      .query('DELETE FROM Categories WHERE CategoryId = @id');
+    await query(
+      `DELETE FROM "Categories" WHERE "CategoryId" = $1`,
+      [Number(id)]
+    );
 
     return NextResponse.json({ status: 'OK' });
 

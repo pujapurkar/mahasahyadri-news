@@ -34,6 +34,10 @@ instagram: "Instagram",
 twitter: "Twitter",
 publish: "Publish",
   update: "Update",
+   loading: "Loading...",
+    backHome: "Back to Home",
+    languageLabel: "Language:",
+    giveFeedback: "Give your feedback",
   },
   mr: {
     title: "महासह्याद्री",
@@ -72,5 +76,10 @@ publish: "Publish",
     twitter: "ट्विटर",
     publish: "प्रकाशित करा",
     update: "अपडेट करा",
+
+    loading: "लोड होत आहे...",
+    backHome: "परत मुख्यपृष्ठावर",
+    languageLabel: "भाषा:",
+    giveFeedback: "तुमची प्रतिक्रिया द्या",
 }
 } as const;

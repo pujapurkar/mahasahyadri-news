@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDB, sql } from '@/lib/db';
+import { query } from '@/lib/db';
 import { sign } from 'jsonwebtoken';
 import { cookies } from 'next/headers';
 import bcrypt from 'bcryptjs';
@@ -12,17 +12,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'ERR', message: 'Username and password required' });
     }
 
-    const db = await getDB();
-    const result = await db
-      .request()
-      .input('username', sql.NVarChar, username)
-      .query('SELECT AdminId, Username, PasswordHash, FullName FROM AdminUsers WHERE Username = @username');
+    const result = await query(
+      'SELECT "AdminId", "Username", "PasswordHash", "FullName" FROM "AdminUsers" WHERE "Username" = $1',
+      [username]
+    );
 
-    if (!result.recordset.length) {
+    if (!result.rows.length) {
       return NextResponse.json({ status: 'ERR', message: 'Invalid username or password' });
     }
 
-    const user = result.recordset[0];
+    const user = result.rows[0];
 
     // Check if password is plain text or hashed
     let isValidPassword = false;
@@ -41,9 +40,9 @@ export async function POST(req: Request) {
 
     // Generate JWT token
     const token = sign(
-    { userId: user.AdminId, username: user.Username },
-    process.env.JWT_SECRET!,
-    { expiresIn: '1d' }  // ← 7d se 1d karo
+      { userId: user.AdminId, username: user.Username },
+      process.env.JWT_SECRET!,
+      { expiresIn: '1d' }
     );
 
     // Set cookie
@@ -52,8 +51,8 @@ export async function POST(req: Request) {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       path: '/',
-      // ← maxAge hatao, session cookie ban jayegi
     });
+
     return NextResponse.json({
       status: 'OK',
       message: 'Login successful',

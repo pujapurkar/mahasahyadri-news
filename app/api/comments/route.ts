@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getDB, sql } from '@/lib/db';
+import { query } from '@/lib/db';
 
 // GET - Fetch comments for a news article (with nested replies)
 export async function GET(req: Request) {
@@ -11,28 +11,24 @@ export async function GET(req: Request) {
       return NextResponse.json({ status: 'ERR', message: 'newsId required' });
     }
 
-    const db = await getDB();
-    const result = await db
-      .request()
-      .input('nid', sql.Int, parseInt(newsId))
-      .query(`
-        SELECT 
-          C.CommentId,
-          C.Content,
-          C.CommentDate,
-          C.ParentId,
-          ISNULL(U.FullName, N'प्रशासक') AS FullName
-        FROM Comments C
-        LEFT JOIN PublicUsers U ON C.UserId = U.UserId
-        WHERE C.NewsId = @nid
-        ORDER BY C.CommentDate ASC
-      `);
+    const result = await query(`
+      SELECT 
+        C."CommentId",
+        C."Content",
+        C."CommentDate",
+        C."ParentId",
+        COALESCE(U."FullName", 'प्रशासक') AS "FullName"
+      FROM "Comments" C
+      LEFT JOIN "PublicUsers" U ON C."UserId" = U."UserId"
+      WHERE C."NewsId" = $1
+      ORDER BY C."CommentDate" ASC
+    `, [parseInt(newsId)]);
 
     // Build hierarchical structure
     const commentsMap = new Map();
     const rootComments: any[] = [];
 
-    result.recordset.forEach((r: any) => {
+    result.rows.forEach((r: any) => {
       const comment = {
         CommentId: r.CommentId,
         User: r.FullName,
@@ -69,58 +65,52 @@ export async function POST(req: Request) {
     const newsId = searchParams.get('newsId');
     const commentText = searchParams.get('commentText');
     const userName = searchParams.get('userName');
-    const parentId = searchParams.get('parentId'); // ← NEW: For replies
+    const parentId = searchParams.get('parentId');
 
     if (!newsId || !commentText?.trim()) {
       return NextResponse.json({ status: 'ERR', message: 'newsId and commentText required' });
     }
 
-    const db = await getDB();
-
     // Check if news exists
-    const check = await db
-      .request()
-      .input('NewsId', sql.Int, parseInt(newsId))
-      .query('SELECT COUNT(*) as cnt FROM NewsArticles WHERE Id = @NewsId');
+    const check = await query(
+      'SELECT COUNT(*) as cnt FROM "NewsArticles" WHERE "Id" = $1',
+      [parseInt(newsId)]
+    );
 
-    if (check.recordset[0].cnt === 0) {
+    if (parseInt(check.rows[0].cnt) === 0) {
       return NextResponse.json({ status: 'ERR', message: 'News article not found' });
     }
 
-    // If userName is provided (user comment), create/get user
+    // If userName is provided, create/get user
     let userId = null;
     if (userName && userName.trim()) {
-      const userCheck = await db
-        .request()
-        .input('fullName', sql.NVarChar(100), userName.trim())
-        .query('SELECT UserId FROM PublicUsers WHERE FullName = @fullName');
+      const userCheck = await query(
+        'SELECT "UserId" FROM "PublicUsers" WHERE "FullName" = $1',
+        [userName.trim()]
+      );
 
-      if (userCheck.recordset.length > 0) {
-        userId = userCheck.recordset[0].UserId;
+      if (userCheck.rows.length > 0) {
+        userId = userCheck.rows[0].UserId;
       } else {
-        const userInsert = await db
-          .request()
-          .input('fullName', sql.NVarChar(100), userName.trim())
-          .query(`
-            INSERT INTO PublicUsers (FullName, Email, JoinedDate, IsActive)
-            OUTPUT INSERTED.UserId
-            VALUES (@fullName, NULL, GETDATE(), 1)
-          `);
-        userId = userInsert.recordset[0].UserId;
+        const userInsert = await query(`
+          INSERT INTO "PublicUsers" ("FullName", "Email", "JoinedDate", "IsActive")
+          VALUES ($1, NULL, NOW(), true)
+          RETURNING "UserId"
+        `, [userName.trim()]);
+        userId = userInsert.rows[0].UserId;
       }
     }
 
-    // Insert comment with ParentId (if reply)
-    await db
-      .request()
-      .input('Content', sql.NVarChar(sql.MAX), commentText.trim())
-      .input('NewsId', sql.Int, parseInt(newsId))
-      .input('UserId', sql.Int, userId)
-      .input('ParentId', sql.Int, parentId ? parseInt(parentId) : null)
-      .query(`
-        INSERT INTO Comments (Content, CommentDate, UserId, NewsId, ParentId)
-        VALUES (@Content, GETDATE(), @UserId, @NewsId, @ParentId)
-      `);
+    // Insert comment
+    await query(`
+      INSERT INTO "Comments" ("Content", "CommentDate", "UserId", "NewsId", "ParentId")
+      VALUES ($1, NOW(), $2, $3, $4)
+    `, [
+      commentText.trim(),
+      userId,
+      parseInt(newsId),
+      parentId ? parseInt(parentId) : null
+    ]);
 
     return NextResponse.json({ status: 'OK', message: 'Comment saved successfully' });
   } catch (e: any) {
@@ -138,19 +128,17 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ status: 'ERR', message: 'commentId required' });
     }
 
-    const db = await getDB();
-    
-    // Delete replies first (if any)
-    await db
-      .request()
-      .input('parentId', sql.Int, parseInt(commentId))
-      .query('DELETE FROM Comments WHERE ParentId = @parentId');
-    
+    // Delete replies first
+    await query(
+      'DELETE FROM "Comments" WHERE "ParentId" = $1',
+      [parseInt(commentId)]
+    );
+
     // Delete main comment
-    await db
-      .request()
-      .input('cid', sql.Int, parseInt(commentId))
-      .query('DELETE FROM Comments WHERE CommentId = @cid');
+    await query(
+      'DELETE FROM "Comments" WHERE "CommentId" = $1',
+      [parseInt(commentId)]
+    );
 
     return NextResponse.json({ status: 'OK', message: 'Comment deleted' });
   } catch (e: any) {

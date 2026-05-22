@@ -27,6 +27,7 @@ export default function AdminNewsDetailPage() {
   const [mainImage, setMainImage] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
+  const footerYear = new Date().getFullYear();
 
   useEffect(() => {
 
@@ -85,7 +86,7 @@ export default function AdminNewsDetailPage() {
   if (!news) return null;
 
   return (
-    <div>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
       {/* HEADER */}
       <div style={{
@@ -107,133 +108,214 @@ export default function AdminNewsDetailPage() {
           </div>
 
           <div style={{
-  fontSize: '13px',
-  display: 'flex',
-  alignItems: 'center',
-  gap: '10px'
-}}>
-  <span>{getCurrentDate(language)}</span>
+            fontSize: '13px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px'
+          }}>
+            <span>{getCurrentDate(language)}</span>
 
- <span>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
-  <select
-    value={language}
-    onChange={(e) => setLanguage(e.target.value as 'mr' | 'en')}
-    style={{
-      padding: '4px',
-      borderRadius: '5px',
-      border: 'none',
-      cursor: 'pointer'
-    }}
-  >
-    <option value="mr">Marathi</option>
-    <option value="en">English</option>
-  </select>
-</div>
+            <span>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value as 'mr' | 'en')}
+              style={{
+                padding: '4px',
+                borderRadius: '5px',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <option value="mr">Marathi</option>
+              <option value="en">English</option>
+            </select>
+          </div>
         </div>
       </div>
 
 
-      <div style={{ maxWidth: '1200px', margin: 'auto', padding: '20px' }}>
+      {/* MAIN CONTENT */}
+      <div style={{ flex: 1 }}>
+        <div style={{ maxWidth: '1200px', margin: 'auto', padding: '20px' }}>
 
-        {/* BACK BUTTON */}
-        <button
-          onClick={() => router.push('/admin/dashboard')}
-          style={{
-            border: 'none',
-            background: 'transparent',
-            color: '#1e88d4',
-            cursor: 'pointer',
-            fontWeight: 600,
-            marginBottom: '15px'
-          }}
-        >
-         ← {language === 'mr' ? 'ॲडमिन डॅशबोर्ड' : 'Admin Dashboard'}
-        </button>
-
-
-        {/* NEWS CARD */}
-        <div style={{
-          background: 'white',
-          padding: '24px',
-          borderRadius: '12px',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
-        }}>
-          
-          <h1 style={{ fontSize: '28px', marginBottom: '10px' }}>
-           {news.Title}
-          </h1>
-
-          <div style={{
-            color: '#666',
-            marginBottom: '20px',
-            fontSize: '14px'
-          }}>
-             📅 {formatDate(news.PublishDate, language)} |
-            👤 {language === 'mr' ? news.Author : "Author"} |
-           🏷️ {translations[language].allNews}
-          </div>
-
-
-          {mainImage && (
-            <img
-              src={mainImage}
-              style={{
-                width: '100%',
-                maxHeight: '500px',
-                objectFit: 'cover',
-                borderRadius: '10px',
-                marginBottom: '20px'
-              }}
-            />
-          )}
-
-
-          <div
+          {/* BACK BUTTON */}
+          <button
+            onClick={() => router.push('/admin/dashboard')}
             style={{
-              fontSize: '16px',
-              lineHeight: '1.8'
+              border: 'none',
+              background: 'transparent',
+              color: '#1e88d4',
+              cursor: 'pointer',
+              fontWeight: 600,
+              marginBottom: '15px'
             }}
-dangerouslySetInnerHTML={{
-  __html: news.Content
-}}
-          />
+          >
+            ← {language === 'mr' ? 'ॲडमिन डॅशबोर्ड' : 'Admin Dashboard'}
+          </button>
 
 
-          {/* GALLERY */}
-          {news.Gallery && news.Gallery.length > 0 && (
+          {/* NEWS CARD */}
+          <div style={{
+            background: 'white',
+            padding: '24px',
+            borderRadius: '12px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
+          }}>
+            
+            <h1 style={{ fontSize: '28px', marginBottom: '10px' }}>
+             {news.Title}
+            </h1>
 
             <div style={{
-              marginTop: '20px',
-              display: 'flex',
-              gap: '10px',
-              overflowX: 'auto'
+              color: '#666',
+              marginBottom: '20px',
+              fontSize: '14px'
             }}>
-
-              {news.Gallery.map((src, idx) => (
-
-                <img
-                  key={idx}
-                  src={src}
-                  onClick={() => setMainImg(src, idx)}
-                  style={{
-                    height: '120px',
-                    width: '180px',
-                    objectFit: 'cover',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    border: activeImg === idx ? '3px solid #27A4F3' : ''
-                  }}
-                />
-
-              ))}
-
+               📅 {formatDate(news.PublishDate, language)} |
+              👤 {language === 'mr' ? news.Author : "Author"} |
+             🏷️ {translations[language].allNews}
             </div>
 
-          )}
+
+            {mainImage && (
+              <img
+                src={mainImage}
+                style={{
+                  width: '100%',
+                  maxHeight: '500px',
+                  objectFit: 'cover',
+                  borderRadius: '10px',
+                  marginBottom: '20px'
+                }}
+              />
+            )}
+
+
+            <div
+              style={{
+                fontSize: '16px',
+                lineHeight: '1.8'
+              }}
+              dangerouslySetInnerHTML={{
+                __html: news.Content
+              }}
+            />
+
+
+            {/* GALLERY */}
+            {news.Gallery && news.Gallery.length > 0 && (
+
+              <div style={{
+                marginTop: '20px',
+                display: 'flex',
+                gap: '10px',
+                overflowX: 'auto'
+              }}>
+
+                {news.Gallery.map((src, idx) => (
+
+                  <img
+                    key={idx}
+                    src={src}
+                    onClick={() => setMainImg(src, idx)}
+                    style={{
+                      height: '120px',
+                      width: '180px',
+                      objectFit: 'cover',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      border: activeImg === idx ? '3px solid #27A4F3' : ''
+                    }}
+                  />
+
+                ))}
+
+              </div>
+
+            )}
+
+          </div>
 
         </div>
-
       </div>
+
+
+   <footer
+  style={{
+    background: '#1976d2',
+    color: '#fff',
+    padding: '30px 0 16px',
+    marginTop: '10px',
+  }}
+>
+  <div
+    style={{
+      maxWidth: '1100px',
+      margin: '0 auto',
+      padding: '0 60px',
+      display: 'grid',
+      gridTemplateColumns: '2fr 2fr 1.2fr',  // ← About wide, Feedback narrow
+      gap: '60px',                             // ← columns दूर
+      marginBottom: '24px',
+    }}
+  >
+    {/* About */}
+    <div>
+      <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+        {translations[language].about}
+      </h3>
+      <p style={{ fontSize: '13px', lineHeight: '1.65', opacity: 0.9 }}>
+        {translations[language].aboutDesc}
+      </p>
+    </div>
+
+    {/* Contact */}
+    <div>
+      <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+        {translations[language].contact}
+      </h3>
+      <p style={{ fontSize: '13px', lineHeight: '1.8', opacity: 0.9 }}>
+        {translations[language].email}: mahasahyadri.press@gmail.com
+      </p>
+      <p style={{ fontSize: '13px', lineHeight: '1.8', opacity: 0.9 }}>
+        {translations[language].phone}: +91 9881131059
+      </p>
+    </div>
+
+    {/* Feedback */}
+    <div>
+      <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
+        {translations[language].feedback}
+      </h3>
+      <button
+        onClick={() => router.push('/feedback')}
+        style={{
+          background: 'transparent',
+          border: 'none',
+          color: '#fff',
+          textDecoration: 'underline',
+          cursor: 'pointer',
+          fontSize: '13px',
+          padding: 0,
+        }}
+      >
+        {translations[language].giveFeedback}
+      </button>
+    </div>
+  </div>
+
+  {/* Copyright */}
+  <div
+    style={{
+      textAlign: 'center',
+      fontSize: '13px',
+      opacity: 0.88,
+      paddingTop: '12px',
+    }}
+  >
+    © 2026 {translations[language].title}. {translations[language].copyright}
+  </div>
+</footer>
 
     </div>
   );

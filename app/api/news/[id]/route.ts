@@ -1,49 +1,44 @@
 import { NextResponse } from 'next/server';
-import { getDB, sql } from '@/lib/db';
+import { query } from '@/lib/db';
 import { parseGallery } from '@/lib/utils';
 
 // GET - Fetch single news by ID (and increment view count)
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const db = await getDB();
-    
-    // Check if request is from admin or user
+
     const url = new URL(req.url);
     const isAdminView = url.searchParams.get('admin') === '1';
-    
+
     // Increment view count ONLY for user side
     if (!isAdminView) {
-      await db
-    .request()
-    .input('id', sql.Int, parseInt(id))
-    .query('UPDATE NewsArticles SET ViewCount = ViewCount + 1 WHERE Id = @id');
-  }
-    
-    // Get news details
-    const result = await db
-      .request()
-      .input('id', sql.Int, parseInt(id))
-      .query(`
-        SELECT 
-          NA.Id,
-          NA.Title,
-          NA.Content,
-          NA.Author,
-          NA.PublishDate,
-          NA.Gallery,
-          NA.ViewCount,
-          C.CategoryName
-        FROM NewsArticles NA
-        LEFT JOIN Categories C ON NA.CategoryId = C.CategoryId
-        WHERE NA.Id = @id
-      `);
+      await query(
+        'UPDATE "NewsArticles" SET "ViewCount" = "ViewCount" + 1 WHERE "Id" = $1',
+        [parseInt(id)]
+      );
+    }
 
-    if (!result.recordset.length) {
+    // Get news details
+    const result = await query(`
+      SELECT 
+        NA."Id",
+        NA."Title",
+        NA."Content",
+        NA."Author",
+        NA."PublishDate",
+        NA."Gallery",
+        NA."ViewCount",
+        C."CategoryName"
+      FROM "NewsArticles" NA
+      LEFT JOIN "Categories" C ON NA."CategoryId" = C."CategoryId"
+      WHERE NA."Id" = $1
+    `, [parseInt(id)]);
+
+    if (!result.rows.length) {
       return NextResponse.json({ status: 'ERR', message: 'News not found' });
     }
 
-    const newsItem = result.recordset[0];
+    const newsItem = result.rows[0];
     const data = {
       Id: newsItem.Id,
       Title: newsItem.Title,
@@ -61,23 +56,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     return NextResponse.json({ status: 'ERR', message: e.message });
   }
 }
+
 // DELETE - Delete news by ID
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const db = await getDB();
 
     // Delete associated comments first
-    await db
-      .request()
-      .input('id', sql.Int, parseInt(id))
-      .query('DELETE FROM Comments WHERE NewsId = @id');
+    await query(
+      'DELETE FROM "Comments" WHERE "NewsId" = $1',
+      [parseInt(id)]
+    );
 
     // Delete news
-    await db
-      .request()
-      .input('id', sql.Int, parseInt(id))
-      .query('DELETE FROM NewsArticles WHERE Id = @id');
+    await query(
+      'DELETE FROM "NewsArticles" WHERE "Id" = $1',
+      [parseInt(id)]
+    );
 
     return NextResponse.json({ status: 'OK', message: 'News deleted successfully' });
   } catch (e: any) {

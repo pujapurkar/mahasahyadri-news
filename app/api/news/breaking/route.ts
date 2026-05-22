@@ -1,29 +1,28 @@
 import { NextResponse } from 'next/server';
-import { getDB } from '@/lib/db';
+import { query } from '@/lib/db';
 
 export async function GET(request: Request) {
   try {
-
     const { searchParams } = new URL(request.url);
     const lang = searchParams.get('lang') || 'mr';
-    const db = await getDB();
 
-    const result = await db.request().query(`
-      SELECT TOP 5 Title
-      FROM NewsArticles
-      WHERE PublishDate <= GETDATE()
-      AND BreakingEndDate IS NOT NULL
-      AND BreakingEndDate >= GETDATE()
-      ORDER BY PublishDate DESC
+    const result = await query(`
+      SELECT "Title"
+      FROM "NewsArticles"
+      WHERE "PublishDate" <= NOW()
+      AND "BreakingEndDate" IS NOT NULL
+      AND "BreakingEndDate" >= NOW()
+      ORDER BY "PublishDate" DESC
+      LIMIT 5
     `);
 
-    const data = result.recordset.length > 0
-      ? result.recordset.map((r: any) => r.Title)
+    const data = result.rows.length > 0
+      ? result.rows.map((r: any) => r.Title)
       : [
-  lang === 'mr'
-    ? 'कोणत्याही ब्रेकिंग न्यूज नाहीत'
-    : 'No breaking news available'
-];
+          lang === 'mr'
+            ? 'कोणत्याही ब्रेकिंग न्यूज नाहीत'
+            : 'No breaking news available'
+        ];
 
     return NextResponse.json({ status: 'OK', data });
 

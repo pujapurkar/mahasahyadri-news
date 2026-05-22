@@ -13,24 +13,16 @@ export function toMarathiDigits(input: string | number): string {
  */
 export function parseSQLDate(dateStr: string): Date {
   if (!dateStr) return new Date(NaN);
-
+  
   const trimmed = String(dateStr).trim();
-
-  // SQL format: "2026-04-03 11:26:55.583"
-  const match = trimmed.match(
-    /^(\d{4})-(\d{2})-(\d{2})[\sT](\d{2}):(\d{2}):(\d{2})/
-  );
-
-  if (match) {
-    const [, year, month, day, hour, min, sec] = match;
-    return new Date(
-      parseInt(year),
-      parseInt(month) - 1,
-      parseInt(day),
-      parseInt(hour),
-      parseInt(min),
-      parseInt(sec)
-    );
+  
+  // PostgreSQL ISO format: "2026-05-06T03:31:00.000Z" (UTC)
+  // Convert to IST by adding 5:30 hours
+  const date = new Date(trimmed);
+  
+  if (!isNaN(date.getTime())) {
+    // Add 5:30 hours for IST display
+    return new Date(date.getTime() + (5.5 * 60 * 60 * 1000));
   }
 
   return new Date(NaN);
