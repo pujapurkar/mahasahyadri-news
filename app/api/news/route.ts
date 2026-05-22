@@ -94,11 +94,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'ERR', message: 'All fields are required' });
     }
 
+    // Image upload - with or without Cloudinary
     const galleryPaths: string[] = [];
     for (const image of images) {
       if (image.size > 0) {
-        const url = await uploadToCloudinary(image);
-        galleryPaths.push(url);
+        try {
+          const url = await uploadToCloudinary(image);
+          galleryPaths.push(url);
+        } catch (err) {
+          console.error('Image upload failed:', err);
+          // Image upload fail ho toh bhi news save hogi
+        }
       }
     }
 
@@ -156,8 +162,12 @@ export async function PUT(req: Request) {
     if (images.length > 0 && images[0].size > 0) {
       for (const image of images) {
         if (image.size > 0) {
-          const url = await uploadToCloudinary(image);
-          galleryPaths.push(url);
+          try {
+            const url = await uploadToCloudinary(image);
+            galleryPaths.push(url);
+          } catch (err) {
+            console.error('Image upload failed:', err);
+          }
         }
       }
     } else {
