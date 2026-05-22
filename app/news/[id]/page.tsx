@@ -129,7 +129,7 @@ useEffect(() => {
           <h1 className="news-title">{news.Title}</h1>
 
           <div className="news-meta">
-            <span>📅 {formatDate(news.PublishDate)}</span>
+            <span>📅 {formatMarathiDate(news.PublishDate)}</span>
             <span>|</span>
             <span>👤 {news.Author}</span>
             <span>|</span>

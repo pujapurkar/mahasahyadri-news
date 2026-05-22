@@ -1,17 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // For file uploads in public/Uploads
+  output: 'standalone',   // ← Add this for Render
+
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'res.cloudinary.com',
-      },
-      {
-        protocol: 'https',
-        hostname: 'mahasahyadri-news.onrender.com',
-      },
-    ],
+    domains: ['localhost', 'your-app.onrender.com'],
   },
 };
 
