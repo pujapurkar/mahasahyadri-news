@@ -282,26 +282,61 @@ export default function AdminNewsDetailPage() {
       </p>
     </div>
 
-    {/* Feedback */}
-    <div>
-      <h3 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
-        {translations[language].feedback}
-      </h3>
-      <button
-        onClick={() => router.push('/feedback')}
-        style={{
-          background: 'transparent',
-          border: 'none',
-          color: '#fff',
-          textDecoration: 'underline',
-          cursor: 'pointer',
-          fontSize: '13px',
-          padding: 0,
-        }}
-      >
-        {translations[language].giveFeedback}
-      </button>
-    </div>
+<div>
+  <h3
+    style={{
+      fontSize: '14px',
+      fontWeight: 600,
+      marginBottom: '8px',
+      color: '#fff',
+    }}
+  >
+    Follow Us
+  </h3>
+
+  <div
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      fontSize: '13px',
+      whiteSpace: 'nowrap',
+    }}
+  >
+    <a
+      href="#"
+      style={{
+        color: '#fff',
+        textDecoration: 'none',
+        opacity: 0.9,
+      }}
+    >
+      Facebook •
+    </a>
+
+    <a
+      href="#"
+      style={{
+        color: '#fff',
+        textDecoration: 'none',
+        opacity: 0.9,
+      }}
+    >
+      Instagram •
+    </a>
+
+    <a
+      href="#"
+      style={{
+        color: '#fff',
+        textDecoration: 'none',
+        opacity: 0.9,
+      }}
+    >
+      Twitter
+    </a>
+  </div>
+</div>
   </div>
 
   {/* Copyright */}
