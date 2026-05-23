@@ -1,14 +1,41 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
-import { parseGallery, getRelativeTime } from '@/lib/utils';
+import { parseGallery } from '@/lib/utils';
+import { v2 as cloudinary } from 'cloudinary';
+
+// Cloudinary config
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 function toISTDate(dateStr: string): Date {
   const date = new Date(dateStr + ':00');
   date.setMinutes(date.getMinutes() - 330);
   return date;
 }
+
+// Upload image to Cloudinary
+async function uploadToCloudinary(file: File): Promise<string> {
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder: 'mahasahyadri',
+        resource_type: 'image',
+      },
+      (error, result) => {
+        if (error) reject(error);
+        else resolve(result!.secure_url);
+      }
+    );
+    uploadStream.end(buffer);
+  });
+}
+
 // GET - Fetch news by category
 export async function GET(req: Request) {
   try {
@@ -76,20 +103,12 @@ export async function POST(req: Request) {
       return NextResponse.json({ status: 'ERR', message: 'All fields are required' });
     }
 
-    // Handle image uploads
-    const uploadDir = join(process.cwd(), 'public', 'Uploads');
-    await mkdir(uploadDir, { recursive: true });
-
+    // ✅ Upload images to Cloudinary
     const galleryPaths: string[] = [];
     for (const image of images) {
       if (image.size > 0) {
-        const bytes = await image.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        const timestamp = Date.now();
-        const filename = `${timestamp}-${image.name}`;
-        const filepath = join(uploadDir, filename);
-        await writeFile(filepath, buffer);
-        galleryPaths.push(`/Uploads/${filename}`);
+        const url = await uploadToCloudinary(image);
+        galleryPaths.push(url);
       }
     }
 
@@ -146,21 +165,15 @@ export async function PUT(req: Request) {
     let galleryPaths: string[] = [];
 
     if (images.length > 0 && images[0].size > 0) {
-      const uploadDir = join(process.cwd(), 'public', 'Uploads');
-      await mkdir(uploadDir, { recursive: true });
-
+      // ✅ Upload new images to Cloudinary
       for (const image of images) {
         if (image.size > 0) {
-          const bytes = await image.arrayBuffer();
-          const buffer = Buffer.from(bytes);
-          const timestamp = Date.now();
-          const filename = `${timestamp}-${image.name}`;
-          const filepath = join(uploadDir, filename);
-          await writeFile(filepath, buffer);
-          galleryPaths.push(`/Uploads/${filename}`);
+          const url = await uploadToCloudinary(image);
+          galleryPaths.push(url);
         }
       }
     } else {
+      // Keep existing gallery
       galleryPaths = parseGallery(existing.rows[0]?.Gallery || '[]');
     }
 
