@@ -129,7 +129,14 @@ export function parseGallery(galleryJson: string): string[] {
   try {
     const parsed = JSON.parse(galleryJson);
     const arr = Array.isArray(parsed) ? parsed : [];
-    return arr.map((path: string) => (path.startsWith('/') ? path : `/${path}`));
+    return arr.map((path: string) => {
+      // Cloudinary URL
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+      }
+      // Local path 
+      return path.startsWith('/') ? path : `/${path}`;
+    });
   } catch {
     return [];
   }
