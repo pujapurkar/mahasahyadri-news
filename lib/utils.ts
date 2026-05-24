@@ -13,8 +13,7 @@ export function toMarathiDigits(input: string | number): string {
  */
 export function parseSQLDate(dateStr: string): Date {
   if (!dateStr) return new Date(NaN);
-  // Direct parse — no conversion
-  return new Date(String(dateStr).trim());
+  return new Date(String(dateStr).trim()); // No +5:30
 }
 
 // Get current date in Marathi

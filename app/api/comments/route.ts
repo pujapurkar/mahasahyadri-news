@@ -33,7 +33,7 @@ export async function GET(req: Request) {
         CommentId: r.CommentId,
         User: r.FullName,
         Text: r.Content,
-        Date: r.CommentDate,
+        Date: toIST(new Date(r.CommentDate)),
         ParentId: r.ParentId,
         Replies: []
       };
@@ -116,6 +116,10 @@ export async function POST(req: Request) {
   } catch (e: any) {
     return NextResponse.json({ status: 'ERR', message: e.message });
   }
+}
+
+function toIST(date: Date): string {
+  return new Date(date.getTime() + (5.5 * 60 * 60 * 1000)).toISOString();
 }
 
 // DELETE - Delete comment
