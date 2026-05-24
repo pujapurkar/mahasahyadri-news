@@ -13,7 +13,7 @@ export function toMarathiDigits(input: string | number): string {
  */
 export function parseSQLDate(dateStr: string): Date {
   if (!dateStr) return new Date(NaN);
-  return new Date(String(dateStr).trim()); // No +5:30
+  return new Date(String(dateStr).trim());
 }
 
 // Get current date in Marathi
@@ -42,29 +42,25 @@ export function getCurrentDate(lang: 'mr' | 'en' = 'mr'): string {
 export function getRelativeTime(dateStr: string, lang: 'mr' | 'en' = 'mr'): string {
   if (!dateStr) return lang === 'mr' ? 'अज्ञात वेळ' : 'Unknown time';
 
-  const utc = new Date(dateStr);
-  if (isNaN(utc.getTime())) return lang === 'mr' ? 'अज्ञात वेळ' : 'Unknown time';
+  // UTC string directly locale mein convert karo
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return lang === 'mr' ? 'अज्ञात वेळ' : 'Unknown time';
 
-  // Explicit IST = UTC + 5:30
-  const ist = new Date(utc.getTime() + 5.5 * 60 * 60 * 1000);
-
-  const options = { timeZone: 'Asia/Kolkata' };
+  const options: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: 'short', 
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata'
+  };
 
   if (lang === 'mr') {
-    const datePart = toMarathiDigits(
-      ist.toLocaleDateString('mr-IN', { day: '2-digit', month: 'short', year: 'numeric' })
-    );
-    const timePart = toMarathiDigits(
-      ist.toLocaleTimeString('mr-IN', { hour: '2-digit', minute: '2-digit', hour12: true })
-    );
-    return `${datePart}, ${timePart}`;
+    return toMarathiDigits(date.toLocaleString('mr-IN', options));
   }
-
-  const datePart = ist.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-  const timePart = ist.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-  return `${datePart}, ${timePart}`;
+  return date.toLocaleString('en-IN', options);
 }
-
 // Format date in Marathi
 export function formatDate(dateStr: string, lang: 'mr' | 'en' = 'mr'): string {
   if (!dateStr) return '';
