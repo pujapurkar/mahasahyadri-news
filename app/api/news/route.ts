@@ -157,10 +157,15 @@ export async function PUT(req: Request) {
     }
 
     // Get existing gallery
-    const existing = await query(
-      'SELECT "Gallery" FROM "NewsArticles" WHERE "Id" = $1',
-      [parseInt(editId)]
-    );
+    const eId = parseInt(editId);
+if (isNaN(eId)) {
+  return NextResponse.json({ status: 'ERR', message: 'Invalid news ID' });
+}
+
+const existing = await query(
+  'SELECT "Gallery" FROM "NewsArticles" WHERE "Id" = $1',
+  [eId]
+);
 
     let galleryPaths: string[] = [];
 
@@ -200,7 +205,7 @@ export async function PUT(req: Request) {
         JSON.stringify(galleryPaths),
         breakingEndDate || null,
         isHero === '1',
-        parseInt(editId),
+        eId,
       ]
     );
 
