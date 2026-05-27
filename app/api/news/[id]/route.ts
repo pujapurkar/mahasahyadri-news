@@ -21,14 +21,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     // Get news details
     const result = await query(`
       SELECT 
-        NA."Id",
-        NA."Title",
-        NA."Content",
-        NA."Author",
-        NA."PublishDate",
-        NA."Gallery",
-        NA."ViewCount",
-        C."CategoryName"
+        SELECT 
+      NA."Id",
+      NA."Title",
+      NA."Content",
+      NA."Author",
+      NA."PublishDate",
+      NA."Gallery",
+      NA."ViewCount",
+      NA."CategoryId",
+      NA."IsHero",
+      NA."BreakingEndDate",
+      C."CategoryName"
       FROM "NewsArticles" NA
       LEFT JOIN "Categories" C ON NA."CategoryId" = C."CategoryId"
       WHERE NA."Id" = $1
@@ -40,15 +44,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 
     const newsItem = result.rows[0];
     const data = {
-      Id: newsItem.Id,
-      Title: newsItem.Title,
-      Content: newsItem.Content,
-      Author: newsItem.Author,
-      PublishDate: newsItem.PublishDate,
-      CategoryName: newsItem.CategoryName,
-      Gallery: parseGallery(newsItem.Gallery),
-      ViewCount: newsItem.ViewCount || 0,
-    };
+    Id: newsItem.Id,
+    Title: newsItem.Title,
+    Content: newsItem.Content,
+    Author: newsItem.Author,
+    PublishDate: newsItem.PublishDate,
+    CategoryId: newsItem.CategoryId,
+    IsHero: newsItem.IsHero || false,
+    BreakingEndDate: newsItem.BreakingEndDate || null,
+    CategoryName: newsItem.CategoryName,
+    Gallery: parseGallery(newsItem.Gallery),
+    ViewCount: newsItem.ViewCount || 0,
+  };
 
     return NextResponse.json({ status: 'OK', data });
   } catch (e: any) {

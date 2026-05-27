@@ -156,7 +156,7 @@ fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
       const d = await res.json();
         if (d.status === 'OK') {
           const n = d.data;
-          setForm({ headline: n.Title, content: n.Content, categoryId: String(n.CategoryId), author: n.Author, 
+          setForm({ headline: n.Title, content: n.Content, categoryId: n.CategoryId ? String(n.CategoryId) : '0', author: n.Author, 
         date: n.PublishDate
   ? new Date(
       new Date(n.PublishDate).getTime() -
@@ -171,14 +171,14 @@ fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
       } else {
         setEditId(null);
         setForm({
-  headline: '',
-  content: '',
-  categoryId: '0',
-  author: '',
-  date: getLocalDateTime(),
-  breakingEnd: '',
-  isHero: false
-});
+          headline: '',
+          content: '',
+          categoryId: '0',
+          author: '',
+          date: getLocalDateTime(),
+          breakingEnd: '',
+          isHero: false
+        });
       }
       setModalOpen(true);
     }
@@ -197,7 +197,7 @@ function getLocalDateTime() {
     const oversized = files.filter(f => f.size > maxSize);
   
     if (oversized.length > 0) {
-      alert(`❌ Image size 300KB se kam honi chahiye!\n\nYe images bahut badi hain:\n${oversized.map(f => `• ${f.name} (${(f.size / 1024).toFixed(1)} KB)`).join('\n')}`);
+      alert(`❌ Image size shold be less than 300 KB!:\n${oversized.map(f => `• ${f.name} (${(f.size / 1024).toFixed(1)} KB)`).join('\n')}`);
       e.target.value = ''; // input reset
       return;
     }
