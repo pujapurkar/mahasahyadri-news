@@ -872,7 +872,6 @@ export default function UserDashboard() {
               <h3 style={{ color: '#fff', marginBottom: '6px', fontSize: '14px' }}>{translations[language].contact}</h3>
               <p>
                 {translations[language].email}: mahasahyadri.press@gmail.com <br />
-                {translations[language].phone}: +91 9881131059
               </p>
             </div>
             <div>

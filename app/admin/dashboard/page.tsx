@@ -735,7 +735,6 @@ function getLocalDateTime() {
   </h3>
   <p>
     {t.email}: mahasahyadri.press@gmail.com <br />
-    {t.phone}: +91 9881131059
   </p>
 </div>
 
