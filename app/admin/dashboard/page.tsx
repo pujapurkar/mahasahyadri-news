@@ -154,6 +154,7 @@ fetch(`/api/news?category=${encodeURIComponent(apiCat)}&lang=${language}`)
       setEditId(id);
       const res = await fetch(`/api/news/${id}?admin=1`); // ← ADD ?admin=1
       const d = await res.json();
+      console.log('EDIT DATA:', d);
         if (d.status === 'OK') {
           const n = d.data;
           setForm({ headline: n.Title, content: n.Content, categoryId: n.CategoryId ? String(n.CategoryId) : '0', author: n.Author, 

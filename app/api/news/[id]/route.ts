@@ -21,7 +21,6 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     // Get news details
     const result = await query(`
       SELECT 
-        SELECT 
       NA."Id",
       NA."Title",
       NA."Content",
