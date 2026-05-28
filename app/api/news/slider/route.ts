@@ -14,7 +14,7 @@ export async function GET(request: Request) {
       LEFT JOIN "Categories" C ON NA."CategoryId" = C."CategoryId"
       WHERE NA."PublishDate" <= NOW()
       ORDER BY NA."PublishDate" DESC
-      LIMIT 7
+      LIMIT 5
     `);
     const data = result.rows.map((r: any) => {
       const gallery = parseGallery(r.Gallery);
