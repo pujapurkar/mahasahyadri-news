@@ -27,6 +27,7 @@ export default function AdminNewsDetailPage() {
   const [mainImage, setMainImage] = useState('');
   const [loading, setLoading] = useState(true);
   const [activeImg, setActiveImg] = useState(0);
+  const [aboutModal, setAboutModal] = useState(false);
   const footerYear = new Date().getFullYear();
 
   useEffect(() => {
@@ -265,9 +266,44 @@ export default function AdminNewsDetailPage() {
         {translations[language].about}
       </h3>
       <p style={{ fontSize: '13px', lineHeight: '1.65', opacity: 0.9 }}>
-        {translations[language].aboutDesc}
+        सह्याद्रीचा अतिविशाल वारसा आणि समृद्ध निसर्ग संस्कृतीचा विचार करता तमाम सह्यप्रेमींकरीता एक समर्पित डिजिटल मंचची गरज होती...
       </p>
+      <span
+        onClick={() => setAboutModal(true)}
+        style={{ color: '#90caf9', fontSize: '13px', cursor: 'pointer', textDecoration: 'underline', marginTop: '6px', display: 'inline-block' }}
+      >
+        अधिक वाचा...
+      </span>
     </div>
+
+    {/* About Modal */}
+    {aboutModal && (
+      <div
+        style={{ display: 'flex', position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999, justifyContent: 'center', alignItems: 'center', padding: '12px' }}
+        onClick={() => setAboutModal(false)}
+      >
+        <div
+          style={{ background: '#fff', borderRadius: '16px', width: '100%', maxWidth: '650px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}
+          onClick={e => e.stopPropagation()}
+        >
+          <div style={{ background: 'linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%)', color: '#fff', padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: 700 }}>महासह्याद्री विषयी…</h3>
+            <button onClick={() => setAboutModal(false)} style={{ background: 'transparent', border: 'none', color: '#fff', fontSize: '24px', cursor: 'pointer' }}>×</button>
+          </div>
+          <div style={{ padding: '20px', overflowY: 'auto', lineHeight: '1.8', fontSize: '14px', color: '#333' }}>
+            <p>सह्याद्रीचा अतिविशाल वारसा आणि समृद्ध निसर्ग संस्कृतीचा विचार करता तमाम सह्यप्रेमींकरीता एक समर्पित डिजिटल मंचची गरज होती. त्यातूनच 'महासह्याद्री'चा उदय झालाय. राज्यातील सह्याद्रीप्रेमी, दुर्गप्रेमी, पर्यावरणमित्र, निसर्गप्रेमी आणि ट्रेकर्स मंडळींचं हक्काचं डिजिटल व्यासपीठ म्हणजे 'महासह्याद्री' न्यूजपोर्टल.</p>
+            <br />
+            <p>सह्याद्री केवळ दगडधोंड्यांची एक पर्वतरांग नाही. महाराष्ट्राची ती जाज्वल्य अस्मिता आणि एक अमीट अशी समृध्द संस्कृती आहे. पश्चिम घाटातून उगम पावलेल्या सह्यरांगा म्हणजे मराठी इतिहासाचा कणा आहे. या विस्तीर्ण सह्यरांगांमधील घडामोडींची माहिती 'महासह्याद्री'च्या माध्यमातून एकाच छताखाली उपलब्ध होईल.</p>
+            <br />
+            <p>गडकिल्ले, घाटवाटा, जंगले, स्थापत्यशिल्पे, निसर्ग आणि पर्यावरणविषयक घडामोडी जाणून घेण्यासाठी 'महासह्याद्री' हे एक हक्काचे विश्वासू माध्यम ठरावे, असे आमुचे प्रयत्न नव्हे; तर ध्येय आहे.</p>
+            <br />
+            <p>हिंदवी स्वराज्याचे संस्थापक छत्रपती शिवाजी महाराज आणि मावळ्यांच्या पराक्रमांचा साक्षीदार असलेला, संतांची भूमी असलेला सह्याद्रीमधील इतिहास, वर्तमानातील भूगोल आणि या सह्याद्रीच्या कुशीत वसलेल्या मानवी संस्कृतीमधील घडामोडी सहज सोप्या भाषेत सह्यप्रेमींसमोर आणण्याचा आमचा संकल्प आहे.</p>
+            <br />
+            <p>'महासह्याद्री' वेबसाईट म्हणजे केवळ माहितीचे भांडार न राहता सह्याद्रीचे संवर्धन, कला, इतिहास आणि येथील साहसाला वाहिलेली एक अखंड चळवळ ठरेल. वाचक, लेखक आणि दाते म्हणून तुम्ही महासह्याद्री परिवारात हक्काने सामील व्हावे, हेच विनम्र आवाहन.</p>
+          </div>
+        </div>
+      </div>
+    )}
 
     {/* Contact */}
     <div>
