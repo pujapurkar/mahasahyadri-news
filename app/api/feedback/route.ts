@@ -13,7 +13,7 @@ export async function POST(req: Request) {
     }
 
     await resend.emails.send({
-      from: 'onboarding@resend.dev',
+      from: 'MahaSahyadri News <onboarding@resend.dev>',
       to: process.env.FEEDBACK_EMAIL!,
       subject: `New Feedback from ${name}`,
       html: `
