@@ -57,6 +57,11 @@
     const { language, setLanguage } = useLanguage();
     const [hover, setHover] = useState(false);
     const t = translations[language as 'en' | 'mr'];
+
+    const [editCatId, setEditCatId] = useState<number | null>(null);
+    const [editCatMr, setEditCatMr] = useState('');
+    const [editCatEn, setEditCatEn] = useState('');
+
     const categoryMap: Record<string, string> = Object.fromEntries(
     categories.map(c => [
       c.CategoryName,
@@ -218,7 +223,7 @@ function getLocalDateTime() {
 
       const fd = new FormData();
       fd.append('headline', form.headline);
-      fd.append('content', form.content);
+     fd.append('content', form.content);
       fd.append('categoryId', form.categoryId);
       fd.append('author', form.author);
       fd.append('date', form.date);
@@ -304,6 +309,21 @@ function getLocalDateTime() {
       alert('Error occurred');
     }
   }
+  async function handleEditCategory(id: number) {
+  if (!editCatMr.trim()) { alert('Marathi नाव भरा'); return; }
+  try {
+    const res = await fetch('/api/categories', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, nameMr: editCatMr, nameEn: editCatEn })
+    });
+    const data = await res.json();
+    if (data.status === 'OK') {
+      setEditCatId(null);
+      fetchAllData(activeCategory);
+    } else { alert(data.message); }
+  } catch (err) { alert('Error occurred'); }
+}
     // ---- Comments ----
     async function openComments(id: number, title: string) {
       setCurrentNewsId(id); setCurrentNewsTitle(title); setCommentsModal(true);
@@ -372,16 +392,17 @@ function getLocalDateTime() {
           body { font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e8f4f8 100%); color: #333; font-size: 14px; overflow-x: hidden; }
           @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&family=Poppins:wght@300;400;500;600;700&display=swap');
           .container { max-width: 1400px; margin: 0 auto; padding: 0 12px; width: 100%; }
-        .top-header { background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: white; padding: 12px 16px 10px; box-shadow: 0 2px 10px rgba(39,164,243,0.3); }/* Replace your header-content line with: */
-.header-content { display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 8px; padding: 0; margin: 0; }          .site-title { font-size: 18px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 4px; }
+       
+.top-header { background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: white; padding: 4px 16px 6px; box-shadow: 0 2px 10px rgba(39,164,243,0.3); }
+.header-content { display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 8px; padding: 0; margin: 0; }          .site-title { font-size: 18px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 0px; }
 
           .site-logo:hover { transform: scale(1.05); }
           /* ✅ ADD this line after .site-title rule: */
 .       site-logo { height: 70px; width: auto; transition: transform 0.3s ease; }
-.breaking-news { background: rgba(255,255,255,0.15); padding: 8px 20px; border-radius: 8px; overflow: hidden; position: relative; backdrop-filter: blur(6px); margin-top: 10px; font-size: 12px; width: 100%; margin-left: 0; }          .breaking-label { font-weight: 600; margin-right: 8px; display: inline-block; color: #fff; min-width: 120px; }
+.breaking-news { background: rgba(255,255,255,0.15); padding: 8px 20px; border-radius: 8px; overflow: hidden; position: relative; backdrop-filter: blur(6px); margin-top: 10px; font-size: 15px; width: 100%; margin-left: 0; }          .breaking-label { font-weight: 600; margin-right: 8px; display: inline-block; color: #fff; min-width: 120px; }
           .news-ticker-wrapper { overflow: hidden; display: inline-block; width: calc(100% - 0px); vertical-align: middle; }
           .news-ticker { display: inline-flex; gap: 40px; white-space: nowrap; will-change: transform; }
-          .news-ticker span { display: inline-block; font-weight: 500; color: #fff; }
+          .news-ticker span { display: inline-block; font-weight: 500; color: #fff;  font-size: 15px; }
           .hero-slider { position: relative; width: 100%; margin: 14px 0 16px; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2); background: #000; aspect-ratio: 16/9; }
           .slide { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.6s ease-in-out; pointer-events: none; }
           .slide.active { opacity: 1; pointer-events: auto; }
@@ -409,11 +430,11 @@ function getLocalDateTime() {
           .news-card:hover .news-main-image { transform: scale(1.05); }
           .news-content-area { display: flex; flex-direction: column; justify-content: space-between; min-height: 240px; }
           .news-category { display: inline-block; background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 10px; width: fit-content; }
-          .news-title { font-size: 22px; font-weight: 700; margin-bottom: 10px; color: #111; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+          .news-title { font-size: 24px; font-weight: 700; margin-bottom: 10px; color: #111; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
           .news-title a { text-decoration: none; color: inherit; transition: color 0.3s; }
           .news-title a:hover { color: #27A4F3; }
-          .news-excerpt { color: #555; line-height: 1.6; margin-bottom: 12px; font-size: 14px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-          .news-meta { display: flex; flex-wrap: wrap; gap: 12px; color: #888; font-size: 13px; align-items: center; margin-top: auto; padding-top: 12px; border-top: 1px solid #f0f0f0; }
+          .news-excerpt { color: #555; line-height: 1.6; margin-bottom: 12px; font-size: 16px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+          .news-meta { display: flex; flex-wrap: wrap; gap: 12px; color: #888; font-size: 14px; align-items: center; margin-top: auto; padding-top: 12px; border-top: 1px solid #f0f0f0; }
           .meta-actions { margin-top: 12px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
           .btn-edit { font-size: 12px; padding: 5px 12px; border-radius: 999px; text-decoration: none; border: 2px solid #d4dde4; cursor: pointer; font-weight: 500; transition: all 0.3s; display: inline-flex; align-items: center; gap: 6px; background: #e3f2fd; color: #4a5f6f; }
           .btn-edit:hover { background: #5a6c7d; color: #fff; border-color: #5a6c7d; }
@@ -454,50 +475,49 @@ function getLocalDateTime() {
         {/* Header */}
         <div className="top-header">
         <div className="header-content"> 
-              <div className="site-title">
-              <img src="/images/Mahasahyadri.png" alt="MahaSahyadri" className="site-logo" 
-                style={{ height: '70px', width: 'auto', filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
-                onError={e => { (e.target as HTMLImageElement).style.display='none'; }} 
-              />
-              <span>MahaSahyadri</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="site-title" onClick={() => router.push('/user/dashboard')}>
+  <img 
+    src="/images/Mahasahyadri.png" 
+    alt="MahaSahyadri" 
+    className="site-logo"
+    style={{ height: '90px', width: 'auto', filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
+    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+  />
+  <span style={{ fontSize: '28px', fontWeight: 800, marginLeft: '-6px' }}>MahaSahyadri</span>
+</div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
 
   {/* Date */}
-  <div style={{ fontSize: '12px', fontWeight: 500 }}>
+  <div style={{ fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap' }}>
     {language === 'mr'
       ? marathiDate
       : new Date().toLocaleDateString('en-IN', {
-          day: 'numeric',
-          month: 'long',
-          year: 'numeric'
+          day: 'numeric', month: 'long', year: 'numeric'
         })}
   </div>
 
-  {/* ✅ Language Label + Dropdown */}
+  {/* Language */}
   <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-    
     <span style={{ fontSize: '13px', fontWeight: 500 }}>
       {language === 'mr' ? 'भाषा:' : 'Language:'}
     </span>
-
     <select
       value={language}
       onChange={(e) => setLanguage(e.target.value as 'en' | 'mr')}
       style={{
         borderRadius: '6px',
-        border: '1px solid #ccc',     // ✅ FIX
-        backgroundColor: '#fff',      // ✅ FIX
-        color: '#000',                // ✅ FIX
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#000',
         cursor: 'pointer',
         outline: 'none'
       }}
     >
-        <option value="en">English</option>
-        <option value="mr">मराठी</option>
-      </select>
-    </div>
+      <option value="en">English</option>
+      <option value="mr">मराठी</option>
+    </select>
   </div>
+</div>
             </div>
             <div className="breaking-news" style={{ marginTop: '14px' }}>
               <span className="breaking-label">🔴 {t.breaking}</span>
@@ -844,58 +864,86 @@ function getLocalDateTime() {
 {t.selectCategory}
         </div>
 
-        {categories.map(c => (
-          <div
-            key={c.CategoryId}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '9px 12px', fontSize: '13px', cursor: 'pointer',
-              background: String(c.CategoryId) === form.categoryId ? '#e3f2fd' : 'transparent',
-              transition: 'background 0.15s'
-            }}
-            onMouseEnter={e => {
-              if (String(c.CategoryId) !== form.categoryId)
-                (e.currentTarget as HTMLDivElement).style.background = '#f5f5f5';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLDivElement).style.background =
-                String(c.CategoryId) === form.categoryId ? '#e3f2fd' : 'transparent';
-            }}
-          >
-            <span
-              onClick={() => { setForm({ ...form, categoryId: String(c.CategoryId) }); setCatDropdownOpen(false); }}
-              style={{ flex: 1, color: '#333' }}
-            >
-             {language === 'mr' ? c.NameMr : c.NameEn}
-            </span>
-
-            <span
-            onClick={async (e) => {
-              e.stopPropagation();
-
-              const confirmed = window.confirm(`"${c.CategoryName}" delete करायची का?`);
-              if (!confirmed) return;
-
-              // selected category reset
-              if (String(c.CategoryId) === form.categoryId) {
-                setForm(f => ({ ...f, categoryId: '0' }));
-              }
-
-              await handleDeleteCategory(c.CategoryId);
-            }}
-              title="Delete category"
-              style={{
-                marginLeft: '10px', color: '#e53935', fontSize: '15px',
-                lineHeight: '1', padding: '2px 4px', borderRadius: '4px',
-                cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s'
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLSpanElement).style.background = '#ffecec'; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLSpanElement).style.background = 'transparent'; }}
-            >
-              ✕
-            </span>
-          </div>
-        ))}
+       {categories.map(c => (
+  <div
+    key={c.CategoryId}
+    style={{
+      padding: '6px 12px', fontSize: '13px',
+      background: String(c.CategoryId) === form.categoryId ? '#e3f2fd' : 'transparent',
+      transition: 'background 0.15s', borderBottom: '1px solid #f5f5f5'
+    }}
+  >
+    {editCatId === c.CategoryId ? (
+      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+        <input
+          value={editCatMr}
+          onChange={e => setEditCatMr(e.target.value)}
+          placeholder="Marathi"
+          style={{ flex: 1, padding: '4px 8px', borderRadius: '6px', border: '1px solid #27A4F3', fontSize: '13px' }}
+          onClick={e => e.stopPropagation()}
+        />
+        <input
+          value={editCatEn}
+          onChange={e => setEditCatEn(e.target.value)}
+          placeholder="English"
+          style={{ flex: 1, padding: '4px 8px', borderRadius: '6px', border: '1px solid #27A4F3', fontSize: '13px' }}
+          onClick={e => e.stopPropagation()}
+        />
+        <span
+          onClick={e => { e.stopPropagation(); handleEditCategory(c.CategoryId); }}
+          title="Save"
+          style={{ color: '#27A4F3', cursor: 'pointer', fontSize: '16px', fontWeight: 700 }}
+        >✔</span>
+        <span
+          onClick={e => { e.stopPropagation(); setEditCatId(null); }}
+          title="Cancel"
+          style={{ color: '#999', cursor: 'pointer', fontSize: '16px' }}
+        >✕</span>
+      </div>
+    ) : (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span
+          onClick={() => { setForm({ ...form, categoryId: String(c.CategoryId) }); setCatDropdownOpen(false); }}
+          style={{ flex: 1, color: '#333', cursor: 'pointer', padding: '3px 0' }}
+        >
+          {language === 'mr' ? c.NameMr : c.NameEn}
+        </span>
+        {/* ✏️ Edit */}
+        <span
+          onClick={e => {
+            e.stopPropagation();
+            setEditCatId(c.CategoryId);
+            setEditCatMr(c.NameMr);
+            setEditCatEn(c.NameEn);
+          }}
+          title="Edit"
+          style={{
+            marginLeft: '8px', color: '#1976d2', fontSize: '13px',
+            padding: '2px 6px', borderRadius: '4px', cursor: 'pointer'
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLSpanElement).style.background = '#e3f2fd'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLSpanElement).style.background = 'transparent'; }}
+        >✏️</span>
+        {/* ✕ Delete */}
+        <span
+          onClick={async e => {
+            e.stopPropagation();
+            if (!window.confirm(`"${c.CategoryName}" delete करायची का?`)) return;
+            if (String(c.CategoryId) === form.categoryId) setForm(f => ({ ...f, categoryId: '0' }));
+            await handleDeleteCategory(c.CategoryId);
+          }}
+          title="Delete"
+          style={{
+            marginLeft: '4px', color: '#e53935', fontSize: '15px',
+            padding: '2px 4px', borderRadius: '4px', cursor: 'pointer'
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLSpanElement).style.background = '#ffecec'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLSpanElement).style.background = 'transparent'; }}
+        >✕</span>
+      </div>
+    )}
+  </div>
+))}
       </div>
     )}
   </div>

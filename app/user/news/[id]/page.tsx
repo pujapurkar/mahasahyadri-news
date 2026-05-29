@@ -142,7 +142,7 @@ export default function UserNewsDetailPage() {
         .news-title { font-size: 28px; font-weight: 700; margin-bottom: 12px; line-height: 1.3; color: #111; }
         .news-meta { color: #666; margin-bottom: 20px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
         .main-img { width: 100%; max-height: 500px; object-fit: cover; border-radius: 12px; margin-bottom: 20px; display: block; }
-        .news-content { font-size: 16px; line-height: 1.8; color: #333; }
+        .news-content { font-size: 18px; line-height: 1.8; color: #333; }
         .gallery { margin-top: 24px; display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px; }
         .gallery img { height: 150px; width: 220px; border-radius: 8px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.15); flex: 0 0 auto; cursor: pointer; transition: all 0.3s; }
         .gallery img:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.25); }
@@ -153,6 +153,7 @@ export default function UserNewsDetailPage() {
           .news-card { padding: 16px; }
           .main-img { max-height: 300px; }
           .gallery img { width: 150px; height: 100px; }
+          .news-content { font-size: 16px; }
         }
       `}</style>
 
@@ -206,8 +207,16 @@ export default function UserNewsDetailPage() {
               onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           )}
 
-          <div className="news-content" dangerouslySetInnerHTML={{ __html: news.Content }} />
-
+              <div
+            style={{
+              fontSize: '18px',
+              lineHeight: '1.8',
+              whiteSpace: 'pre-wrap'
+            }}
+            dangerouslySetInnerHTML={{
+              __html: news.Content
+            }}
+          />
           {news.Gallery && news.Gallery.length > 0 && (
             <div className="gallery">
               {news.Gallery.map((src, idx) => (

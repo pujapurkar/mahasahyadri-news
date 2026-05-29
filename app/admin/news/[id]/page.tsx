@@ -109,28 +109,33 @@ export default function AdminNewsDetailPage() {
           </div>
 
           <div style={{
-            fontSize: '13px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}>
-            <span>{getCurrentDate(language)}</span>
-
-            <span>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value as 'mr' | 'en')}
-              style={{
-                padding: '4px',
-                borderRadius: '5px',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <option value="mr">Marathi</option>
-              <option value="en">English</option>
-            </select>
-          </div>
+  fontSize: '13px',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'flex-end',
+  gap: '4px'
+}}>
+  <span style={{ whiteSpace: 'nowrap' }}>{getCurrentDate(language)}</span>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+    <span>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
+    <select
+      value={language}
+      onChange={(e) => setLanguage(e.target.value as 'mr' | 'en')}
+      style={{
+        padding: '4px',
+        borderRadius: '5px',
+        border: '1px solid #ccc',
+        backgroundColor: '#fff',
+        color: '#000',
+        cursor: 'pointer',
+        outline: 'none'
+      }}
+    >
+      <option value="mr">मराठी</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+</div>
         </div>
       </div>
 
@@ -163,14 +168,14 @@ export default function AdminNewsDetailPage() {
             boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
           }}>
             
-            <h1 style={{ fontSize: '28px', marginBottom: '10px' }}>
+            <h1 style={{ fontSize: '32px', marginBottom: '10px' }}>
              {news.Title}
             </h1>
 
             <div style={{
               color: '#666',
               marginBottom: '20px',
-              fontSize: '14px'
+              fontSize: '16px'
             }}>
                📅 {formatDate(news.PublishDate, language)} |
               👤 {language === 'mr' ? news.Author : "Author"} |
@@ -193,14 +198,15 @@ export default function AdminNewsDetailPage() {
 
 
             <div
-              style={{
-                fontSize: '16px',
-                lineHeight: '1.8'
-              }}
-              dangerouslySetInnerHTML={{
-                __html: news.Content
-              }}
-            />
+  style={{
+    fontSize: '18px',
+    lineHeight: '1.8',
+    whiteSpace: 'pre-wrap'
+  }}
+  dangerouslySetInnerHTML={{
+    __html: news.Content
+  }}
+/>
 
 
             {/* GALLERY */}

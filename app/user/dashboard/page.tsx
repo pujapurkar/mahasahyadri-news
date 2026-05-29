@@ -289,12 +289,12 @@ export default function UserDashboard() {
         }
 
         /* ===== HEADER ===== */
-        .top-header {
-          background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%);
-          color: white;
-          padding: 14px 16px;
-          box-shadow: 0 2px 10px rgba(39,164,243,0.3);
-        }
+       .top-header {
+  background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%);
+  color: white;
+  padding: 4px 16px 6px;
+  box-shadow: 0 2px 10px rgba(39,164,243,0.3);
+}
         .header-content {
           display: flex;
           flex-direction: row;
@@ -309,12 +309,12 @@ export default function UserDashboard() {
           text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 0px;
           flex-shrink: 0;
           cursor: pointer;
         }
         .site-logo {
-          height: 70px;
+          height: 90px;
           width: auto;
           transition: transform 0.3s ease;
         }
@@ -329,7 +329,7 @@ export default function UserDashboard() {
           position: relative;
           backdrop-filter: blur(6px);
           margin-top: 10px;
-          font-size: 12px;
+          font-size: 15px;
           width: 100%;          /* was 100vw — caused horizontal scroll */
           margin-left: 0;       /* remove negative margin trick */
           box-sizing: border-box;
@@ -357,6 +357,7 @@ export default function UserDashboard() {
           display: inline-block;
           font-weight: 500;
           color: #fff;
+          font-size: 15px;
         }
 
         /* ===== HERO SLIDER ===== */
@@ -560,7 +561,7 @@ export default function UserDashboard() {
           color: #555;
           line-height: 1.6;
           margin-bottom: 10px;
-          font-size: 13px;
+          font-size: 16px;
           display: -webkit-box;
           -webkit-line-clamp: 3;
           -webkit-box-orient: vertical;
@@ -652,15 +653,15 @@ export default function UserDashboard() {
       <div className="top-header">
         <div className="header-content">
           <div className="site-title" onClick={() => router.push('/user/dashboard')}>
-            <img 
-              src="/images/Mahasahyadri.png" 
-              alt="MahaSahyadri" 
-              className="site-logo"
-              style={{ filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-            MahaSahyadri
-          </div>
+      <img 
+        src="/images/Mahasahyadri.png" 
+        alt="MahaSahyadri" 
+        className="site-logo"
+        style={{ height: '90px', width: 'auto', filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
+        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+      />
+      <span style={{ fontSize: '28px', fontWeight: 800, marginLeft: '-6px' }}>MahaSahyadri</span>
+    </div>
 
           <div style={{ textAlign: 'right' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>

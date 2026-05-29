@@ -88,3 +88,17 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ status: 'ERR', message: e.message });
   }
 }
+
+// PUT handler
+export async function PUT(req: Request) {
+  try {
+    const { id, nameMr, nameEn } = await req.json();
+    await query(
+      `UPDATE "Categories" SET "NameMr" = $1, "NameEn" = $2 WHERE "CategoryId" = $3`,
+      [nameMr, nameEn || '', Number(id)]
+    );
+    return NextResponse.json({ status: 'OK' });
+  } catch (e: any) {
+    return NextResponse.json({ status: 'ERR', message: e.message });
+  }
+}
