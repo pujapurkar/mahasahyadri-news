@@ -34,6 +34,10 @@ export default function UserDashboard() {
   const [news, setNews] = useState<NewsItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [aboutModal, setAboutModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<NewsItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
   const categoryMap: Record<string, string> = Object.fromEntries(
   categories.map(c => [
     c.CategoryName,
@@ -118,6 +122,16 @@ export default function UserDashboard() {
     return () => clearInterval(sliderIntervalRef.current);
   }, [sliderNews]);
 
+  useEffect(() => {
+  function handleClickOutside(e: MouseEvent) {
+    const wrapper = document.querySelector('.search-bar-wrapper');
+    if (wrapper && !wrapper.contains(e.target as Node)) {
+      setShowSearchResults(false);
+    }
+  }
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, []);
   // ---- Breaking ticker ----
   useEffect(() => {
     const ticker = tickerRef.current;
@@ -264,6 +278,28 @@ export default function UserDashboard() {
     }
   }
  
+  async function handleSearch(q: string) {
+  setSearchQuery(q);
+  if (q.trim().length < 2) {
+    setShowSearchResults(false);
+    setSearchResults([]);
+    return;
+  }
+  setIsSearching(true);
+  setShowSearchResults(true);
+  try {
+    const res = await fetch(`/api/news?category=&lang=${language}`);
+    const d = await res.json();
+    if (d.status === 'OK') {
+      const filtered = d.data.filter((item: NewsItem) =>
+        item.Title.toLowerCase().includes(q.toLowerCase()) ||
+        item.Content.toLowerCase().includes(q.toLowerCase())
+      );
+      setSearchResults(filtered);
+    }
+  } catch (e) { console.error(e); }
+  finally { setIsSearching(false); }
+}
   return (
     <>
       <style>{`
@@ -640,7 +676,79 @@ export default function UserDashboard() {
           .slide-description { font-size: 13px; }
           .breaking-label { min-width: 120px; }
         }
-
+        .search-bar-wrapper {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  margin: 8px auto 0;
+}
+.search-input {
+  width: 100%;
+  padding: 9px 44px 9px 16px;
+  border-radius: 999px;
+  border: none;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.search-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1e88d4;
+  border: none;
+  border-radius: 999px;
+  padding: 5px 14px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0; right: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  z-index: 1000;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.search-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s;
+  align-items: center;
+}
+.search-item:last-child { border-bottom: none; }
+.search-item:hover { background: #f0f8ff; }
+.search-item-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #eee;
+}
+.search-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.search-item-meta { font-size: 11px; color: #888; margin-top: 3px; }
+@media (min-width: 768px) {
+  .search-bar-wrapper { max-width: 600px; }
+}
         @media (min-width: 1024px) {
           .news-card { grid-template-columns: 320px 1fr; }
           .news-image-container { height: 240px; }
@@ -687,7 +795,59 @@ export default function UserDashboard() {
             </div>
           </div>
         </div>
+      
+      {/* Search Bar */}
+<div className="search-bar-wrapper">
+  <input
+    type="text"
+    className="search-input"
+    value={searchQuery}
+    onChange={e => handleSearch(e.target.value)}
+    placeholder={language === 'mr' ? '🔍 बातमी शोधा...' : '🔍 Search news...'}
+    onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
+  />
+  <button className="search-btn">
+    {language === 'mr' ? 'शोधा' : 'Search'}
+  </button>
 
+  {/* Dropdown Results */}
+  {showSearchResults && (
+    <div className="search-dropdown">
+      {isSearching ? (
+        <div style={{ padding: '16px', textAlign: 'center', color: '#888' }}>
+          {language === 'mr' ? 'शोधत आहे...' : 'Searching...'}
+        </div>
+      ) : searchResults.length === 0 ? (
+        <div style={{ padding: '16px', textAlign: 'center', color: '#888' }}>
+          {language === 'mr' ? 'कोणतीही बातमी सापडली नाही' : 'No news found'}
+        </div>
+      ) : (
+        searchResults.map(item => (
+          <div
+            key={item.Id}
+            className="search-item"
+            onClick={() => { router.push(`/user/news/${item.Id}`); setShowSearchResults(false); setSearchQuery(''); }}
+          >
+            {item.Gallery?.[0] ? (
+              <img src={item.Gallery[0]} className="search-item-img" alt="" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            ) : (
+              <div className="search-item-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📷</div>
+            )}
+            <div>
+              <div className="search-item-title">{item.Title}</div>
+              <div className="search-item-meta">
+                📅 {getRelativeTime(item.PublishDate, language)} • 👤 {item.Author}
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  )}
+</div>
+
+{/* Breaking News */}
+<div className="breaking-news"></div>
         {/* Breaking News */}
         <div className="breaking-news">
           <span className="breaking-label">🔴 {translations[language].breaking}:</span>
