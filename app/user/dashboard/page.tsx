@@ -877,7 +877,7 @@ export default function UserDashboard() {
             </div>
           </div>
         </div>
-      </div>
+      
 
       <div className="container">
         {/* ===== HERO SLIDER ===== */}
