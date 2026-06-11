@@ -332,7 +332,40 @@ export default function UserDashboard() {
           justify-content: space-between;
           width: 100%;
           gap: 8px;
+          flex-wrap: wrap;
         }
+        .header-date-lang {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          flex-shrink: 0;
+        }
+          .search-bar-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 500px;
+  margin: 0 12px;
+}
+
+@media (max-width: 640px) {
+  .search-bar-wrapper {
+    order: 3;
+    flex: 0 0 100%;
+    margin: 6px 0 0;
+    max-width: 100%;
+  }
+  .header-date-lang {
+    order: 2;
+    flex-shrink: 0;
+    justify-content: flex-end;
+  }
+  .site-title {
+    order: 1;
+  }
+}
         .site-title {
           font-size: 16px;
           font-weight: 700;
@@ -765,28 +798,18 @@ export default function UserDashboard() {
       <span style={{ fontSize: '28px', fontWeight: 800, marginLeft: '-6px' }}>MahaSahyadri</span>
     </div>
 
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-              <span style={{ whiteSpace: 'nowrap' }}>{getCurrentDate(language)}</span>
-              <span>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as 'en' | 'mr')}
-                style={{
-                  padding: '5px 8px',
-                  borderRadius: '6px',
-                  border: '1px solid #ccc',
-                  backgroundColor: '#fff',
-                  color: '#000',
-                  fontWeight: '500',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                }}
-              >
-                <option value="en" style={{ color: '#000' }}>English</option>
-                <option value="mr" style={{ color: '#000' }}>मराठी</option>
-              </select>
-            </div>
+          <div className="header-date-lang">
+  <span style={{ whiteSpace: 'nowrap', fontSize: '12px' }}>{getCurrentDate(language)}</span>
+  <span style={{ fontSize: '12px' }}>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
+  <select
+    value={language}
+    onChange={(e) => setLanguage(e.target.value as 'en' | 'mr')}
+    style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#fff', color: '#000', fontWeight: '500', cursor: 'pointer', fontSize: '12px' }}
+  >
+    <option value="en" style={{ color: '#000' }}>English</option>
+    <option value="mr" style={{ color: '#000' }}>मराठी</option>
+  </select>
+</div>
           </div>
         </div>
       
