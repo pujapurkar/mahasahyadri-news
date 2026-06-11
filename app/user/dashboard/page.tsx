@@ -784,10 +784,11 @@ export default function UserDashboard() {
         }
       `}</style>
 
-      {/* ===== HEADER ===== */}
-      <div className="top-header">
-        <div className="header-content">
-          <div className="site-title" onClick={() => router.push('/user/dashboard')}>
+     {/* ===== HEADER ===== */}
+<div className="top-header">
+  <div className="header-content">
+    {/* Logo */}
+    <div className="site-title" onClick={() => router.push('/user/dashboard')}>
       <img 
         src="/images/Mahasahyadri.png" 
         alt="MahaSahyadri" 
@@ -798,85 +799,83 @@ export default function UserDashboard() {
       <span style={{ fontSize: '28px', fontWeight: 800, marginLeft: '-6px' }}>MahaSahyadri</span>
     </div>
 
-          <div className="header-date-lang">
-  <span style={{ whiteSpace: 'nowrap', fontSize: '12px' }}>{getCurrentDate(language)}</span>
-  <span style={{ fontSize: '12px' }}>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
-  <select
-    value={language}
-    onChange={(e) => setLanguage(e.target.value as 'en' | 'mr')}
-    style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#fff', color: '#000', fontWeight: '500', cursor: 'pointer', fontSize: '12px' }}
-  >
-    <option value="en" style={{ color: '#000' }}>English</option>
-    <option value="mr" style={{ color: '#000' }}>मराठी</option>
-  </select>
-</div>
-          </div>
-        </div>
-      
-      {/* Search Bar */}
-<div className="search-bar-wrapper">
-  <input
-    type="text"
-    className="search-input"
-    value={searchQuery}
-    onChange={e => handleSearch(e.target.value)}
-    placeholder={language === 'mr' ? '🔍 बातमी शोधा...' : '🔍 Search news...'}
-    onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
-  />
-  <button className="search-btn">
-    {language === 'mr' ? 'शोधा' : 'Search'}
-  </button>
-
-  {/* Dropdown Results */}
-  {showSearchResults && (
-    <div className="search-dropdown">
-      {isSearching ? (
-        <div style={{ padding: '16px', textAlign: 'center', color: '#888' }}>
-          {language === 'mr' ? 'शोधत आहे...' : 'Searching...'}
-        </div>
-      ) : searchResults.length === 0 ? (
-        <div style={{ padding: '16px', textAlign: 'center', color: '#888' }}>
-          {language === 'mr' ? 'कोणतीही बातमी सापडली नाही' : 'No news found'}
-        </div>
-      ) : (
-        searchResults.map(item => (
-          <div
-            key={item.Id}
-            className="search-item"
-            onClick={() => { router.push(`/user/news/${item.Id}`); setShowSearchResults(false); setSearchQuery(''); }}
-          >
-            {item.Gallery?.[0] ? (
-              <img src={item.Gallery[0]} className="search-item-img" alt="" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            ) : (
-              <div className="search-item-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📷</div>
-            )}
-            <div>
-              <div className="search-item-title">{item.Title}</div>
-              <div className="search-item-meta">
-                📅 {getRelativeTime(item.PublishDate, language)} • 👤 {item.Author}
-              </div>
+    {/* Search Bar - Center */}
+    <div className="search-bar-wrapper">
+      <input
+        type="text"
+        className="search-input"
+        value={searchQuery}
+        onChange={e => handleSearch(e.target.value)}
+        placeholder={language === 'mr' ? '🔍 बातमी शोधा...' : '🔍 Search news...'}
+        onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
+      />
+      <button className="search-btn">
+        {language === 'mr' ? 'शोधा' : 'Search'}
+      </button>
+      {showSearchResults && (
+        <div className="search-dropdown">
+          {isSearching ? (
+            <div style={{ padding: '16px', textAlign: 'center', color: '#888' }}>
+              {language === 'mr' ? 'शोधत आहे...' : 'Searching...'}
             </div>
-          </div>
-        ))
+          ) : searchResults.length === 0 ? (
+            <div style={{ padding: '16px', textAlign: 'center', color: '#888' }}>
+              {language === 'mr' ? 'कोणतीही बातमी सापडली नाही' : 'No news found'}
+            </div>
+          ) : (
+            searchResults.map(item => (
+              <div
+                key={item.Id}
+                className="search-item"
+                onClick={() => { router.push(`/user/news/${item.Id}`); setShowSearchResults(false); setSearchQuery(''); }}
+              >
+                {item.Gallery?.[0] ? (
+                  <img src={item.Gallery[0]} className="search-item-img" alt="" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                ) : (
+                  <div className="search-item-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📷</div>
+                )}
+                <div>
+                  <div className="search-item-title">{item.Title}</div>
+                  <div className="search-item-meta">📅 {getRelativeTime(item.PublishDate, language)} • 👤 {item.Author}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       )}
     </div>
-  )}
+
+    {/* Date + Language - Right */}
+    <div className="header-date-lang">
+      <span style={{ whiteSpace: 'nowrap', fontSize: '12px' }}>{getCurrentDate(language)}</span>
+      <span style={{ fontSize: '12px' }}>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
+      <select
+        value={language}
+        onChange={(e) => setLanguage(e.target.value as 'en' | 'mr')}
+        style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#fff', color: '#000', fontWeight: '500', cursor: 'pointer', fontSize: '12px' }}
+      >
+        <option value="en" style={{ color: '#000' }}>English</option>
+        <option value="mr" style={{ color: '#000' }}>मराठी</option>
+      </select>
+    </div>
+  </div>
+
+  {/* Breaking News */}
+  <div className="breaking-news">
+    <span className="breaking-label">🔴 {translations[language].breaking}:</span>
+    <div className="news-ticker-wrapper">
+      <div className="news-ticker" ref={tickerRef}>
+        {breakingNews.length === 0 ? (
+          <span>{translations[language].noBreaking}</span>
+        ) : (
+          breakingNews.map((title, i) => (
+            <span key={i}>{title} &nbsp;&nbsp;&nbsp;</span>
+          ))
+        )}
+      </div>
+    </div>
+  </div>
 </div>
-        {/* Breaking News */}
-        <div className="breaking-news">
-          <span className="breaking-label">🔴 {translations[language].breaking}:</span>
-          <div className="news-ticker-wrapper">
-            <div className="news-ticker" ref={tickerRef}>
-              {breakingNews.length === 0 ? (
-                <span>{translations[language].noBreaking}</span>
-              ) : (
-                breakingNews.map((title, i) => (
-                  <span key={i}>{title} &nbsp;&nbsp;&nbsp;</span>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
       
 
       <div className="container">
