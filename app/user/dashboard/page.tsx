@@ -288,15 +288,9 @@ export default function UserDashboard() {
   setIsSearching(true);
   setShowSearchResults(true);
   try {
-    const res = await fetch(`/api/news?category=&lang=${language}`);
+    const res = await fetch(`/api/news/search?q=${encodeURIComponent(q)}&lang=${language}`);
     const d = await res.json();
-    if (d.status === 'OK') {
-      const filtered = d.data.filter((item: NewsItem) =>
-        item.Title.toLowerCase().includes(q.toLowerCase()) ||
-        item.Content.toLowerCase().includes(q.toLowerCase())
-      );
-      setSearchResults(filtered);
-    }
+    if (d.status === 'OK') setSearchResults(d.data);
   } catch (e) { console.error(e); }
   finally { setIsSearching(false); }
 }
@@ -845,9 +839,6 @@ export default function UserDashboard() {
     </div>
   )}
 </div>
-
-{/* Breaking News */}
-<div className="breaking-news"></div>
         {/* Breaking News */}
         <div className="breaking-news">
           <span className="breaking-label">🔴 {translations[language].breaking}:</span>
