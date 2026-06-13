@@ -15,7 +15,7 @@ export async function GET(req: Request) {
       SELECT 
         NA."Id", NA."Title", NA."Content", NA."Author",
         NA."PublishDate", NA."Gallery",
-        C."CategoryName" AS "Category"
+        C."CategoryName", C."NameMr", C."NameEn"
       FROM "NewsArticles" NA
       LEFT JOIN "Categories" C ON NA."CategoryId" = C."CategoryId"
       WHERE NA."PublishDate" <= NOW()
@@ -24,6 +24,8 @@ export async function GET(req: Request) {
         OR NA."Content" ILIKE $1
         OR NA."Author" ILIKE $1
         OR C."CategoryName" ILIKE $1
+        OR C."NameEn" ILIKE $1
+        OR C."NameMr" ILIKE $1
       )
       ORDER BY NA."PublishDate" DESC
       LIMIT 20
@@ -33,7 +35,7 @@ export async function GET(req: Request) {
       Id: r.Id,
       Title: r.Title,
       Content: r.Content,
-      Category: r.Category || 'विविध',
+      Category: r.CategoryName || 'विविध',
       Author: r.Author,
       PublishDate: r.PublishDate,
       Gallery: parseGallery(r.Gallery),
