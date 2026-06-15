@@ -54,6 +54,10 @@
     const [catMr, setCatMr] = useState('');
     const [catEn, setCatEn] = useState('');
     const [aboutModal, setAboutModal] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<NewsItem[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showSearchResults, setShowSearchResults] = useState(false);
     const { language, setLanguage } = useLanguage();
     const [hover, setHover] = useState(false);
     const t = translations[language as 'en' | 'mr'];
@@ -103,6 +107,33 @@
       } catch (e) { console.error(e); }
     }
 
+    useEffect(() => {
+  function handleClickOutside(e: MouseEvent) {
+    const wrapper = document.querySelector('.search-bar-wrapper');
+    if (wrapper && !wrapper.contains(e.target as Node)) {
+      setShowSearchResults(false);
+    }
+  }
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, []);
+
+async function handleSearch(q: string) {
+  setSearchQuery(q);
+  if (q.trim().length < 2) {
+    setShowSearchResults(false);
+    setSearchResults([]);
+    return;
+  }
+  setIsSearching(true);
+  setShowSearchResults(true);
+  try {
+    const res = await fetch(`/api/news/search?q=${encodeURIComponent(q)}&lang=${language}`);
+    const d = await res.json();
+    if (d.status === 'OK') setSearchResults(d.data);
+  } catch (e) { console.error(e); }
+  finally { setIsSearching(false); }
+}
     // ---- Slider logic ----
     useEffect(() => {
       if (sliderNews.length === 0) return;
@@ -394,28 +425,265 @@ function getLocalDateTime() {
           .container { max-width: 1400px; margin: 0 auto; padding: 0 12px; width: 100%; }
        
 .top-header { background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: white; padding: 4px 16px 6px; box-shadow: 0 2px 10px rgba(39,164,243,0.3); }
-.header-content { display: flex; flex-direction: row; align-items: center; justify-content: space-between; width: 100%; gap: 8px; padding: 0; margin: 0; }          .site-title { font-size: 18px; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 0px; }
+.header-content {
+          display: flex;
+          flex-direction: row;
+          align-items: center;
+          justify-content: space-between;
+          width: 100%;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+          .header-date-lang {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          flex-wrap: wrap;
+          justify-content: flex-end;
+          flex-shrink: 0;
+        }
+          .search-bar-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 500px;
+  margin: 0 12px;
+}
+  @media (max-width: 640px) {
+  .search-bar-wrapper {
+    order: 3;
+    flex: 0 0 100%;
+    margin: 6px 0 0;
+    max-width: 100%;
+  }
+    .header-date-lang {
+    order: 2;
+    flex-shrink: 0;
+    justify-content: flex-end;
+  }
+  .site-title {
+    order: 1;
+  }
+}
 
-          .site-logo:hover { transform: scale(1.05); }
-          /* ✅ ADD this line after .site-title rule: */
-.       site-logo { height: 70px; width: auto; transition: transform 0.3s ease; }
-.breaking-news { background: rgba(255,255,255,0.15); padding: 8px 20px; border-radius: 8px; overflow: hidden; position: relative; backdrop-filter: blur(6px); margin-top: 10px; font-size: 15px; width: 100%; margin-left: 0; }          .breaking-label { font-weight: 600; margin-right: 8px; display: inline-block; color: #fff; min-width: 120px; }
-          .news-ticker-wrapper { overflow: hidden; display: inline-block; width: calc(100% - 0px); vertical-align: middle; }
-          .news-ticker { display: inline-flex; gap: 40px; white-space: nowrap; will-change: transform; }
-          .news-ticker span { display: inline-block; font-weight: 500; color: #fff;  font-size: 15px; }
-          .hero-slider { position: relative; width: 100%; margin: 14px 0 16px; border-radius: 14px; overflow: hidden; box-shadow: 0 10px 40px rgba(0,0,0,0.2); background: #000; aspect-ratio: 16/9; }
-          .slide { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; transition: opacity 0.6s ease-in-out; pointer-events: none; }
-          .slide.active { opacity: 1; pointer-events: auto; }
-          .slide img { width: 100%; height: 100%; object-fit: cover; }
-          .slide-overlay { position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(transparent, rgba(0,0,0,0.75)); padding: 16px 12px 12px; color: white; }
-          .slide-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; text-shadow: 2px 2px 8px rgba(0,0,0,0.6); }
-          .slide-description { font-size: 12px; opacity: 0.95; max-height: 3.6em; overflow: hidden; }
-          .slider-controls { position: absolute; top: 50%; left: 0; right: 0; display: flex; justify-content: space-between; transform: translateY(-50%); padding: 0 10px; pointer-events: none; z-index: 5; }
-          .slider-btn { pointer-events: auto; background: rgba(0,0,0,0.45); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 22px; cursor: pointer; transition: 0.3s; }
-          .slider-btn:hover { background: rgba(255,255,255,0.9); color: black; transform: scale(1.05); }
-          .slider-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 6; }
-          .dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: 0.3s; border: none; }
-          .dot.active { background: #fff; transform: scale(1.3); }
+.site-title {
+          font-size: 16px;
+          font-weight: 700;
+          text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: center;
+          gap: 0px;
+          flex-shrink: 0;
+          cursor: pointer;
+        }
+          .site-logo {
+          height: 90px;
+          width: auto;
+          transition: transform 0.3s ease;
+        }
+        .site-logo:hover { transform: scale(1.05); }
+        .search-input {
+  width: 100%;
+  padding: 9px 44px 9px 16px;
+  border-radius: 999px;
+  border: none;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.search-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1e88d4;
+  border: none;
+  border-radius: 999px;
+  padding: 5px 14px;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  font-weight: 600;
+}
+.search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0; right: 0;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+  z-index: 1000;
+  max-height: 360px;
+  overflow-y: auto;
+}
+.search-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: background 0.2s;
+  align-items: center;
+}
+.search-item:last-child { border-bottom: none; }
+.search-item:hover { background: #f0f8ff; }
+.search-item-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: #eee;
+}
+.search-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.search-item-meta { font-size: 11px; color: #888; margin-top: 3px; }
+
+@media (min-width: 768px) {
+  .search-bar-wrapper { max-width: 600px; }
+}
+/* ===== BREAKING NEWS — FIXED: no 100vw overflow ===== */
+        .breaking-news {
+          background: rgba(255,255,255,0.15);
+          padding: 8px 10px;
+          border-radius: 8px;
+          overflow: hidden;
+          position: relative;
+          backdrop-filter: blur(6px);
+          margin-top: 10px;
+          font-size: 15px;
+          width: 100%;          /* was 100vw — caused horizontal scroll */
+          margin-left: 0;       /* remove negative margin trick */
+          box-sizing: border-box;
+        }
+        .breaking-label {
+          font-weight: 600;
+          margin-right: 8px;
+          display: inline-block;
+          color: #fff;
+          min-width: 100px;
+        }
+        .news-ticker-wrapper {
+          overflow: hidden;
+          display: inline-block;
+          width: calc(100% - 0px);
+          vertical-align: middle;
+        }
+        .news-ticker {
+          display: inline-flex;
+          gap: 40px;
+          white-space: nowrap;
+          will-change: transform;
+        }
+        .news-ticker span {
+          display: inline-block;
+          font-weight: 500;
+          color: #fff;
+          font-size: 15px;
+        }
+          /* ===== HERO SLIDER ===== */
+        .hero-slider {
+          position: relative;
+          width: 100%;
+          margin: 10px 0 14px;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+          background: #000;
+          aspect-ratio: 16/9;
+        }
+        .slide {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          opacity: 0;
+          transition: opacity 0.6s ease-in-out;
+          pointer-events: none;
+        }
+        .slide.active { opacity: 1; pointer-events: auto; }
+        .slide img { width: 100%; height: 100%; object-fit: cover; }
+        .slide-overlay {
+          position: absolute;
+          bottom: 0; left: 0; right: 0;
+          background: linear-gradient(transparent, rgba(0,0,0,0.75));
+          padding: 14px 12px 10px;
+          color: white;
+        }
+        .slide-title {
+          font-size: 15px;
+          font-weight: 700;
+          margin-bottom: 4px;
+          text-shadow: 2px 2px 8px rgba(0,0,0,0.6);
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+        .slide-description {
+          font-size: 11px;
+          opacity: 0.9;
+          max-height: 2.8em;
+          overflow: hidden;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+        .slider-controls {
+          position: absolute;
+          top: 50%;
+          left: 0; right: 0;
+          display: flex;
+          justify-content: space-between;
+          transform: translateY(-50%);
+          padding: 0 8px;
+          pointer-events: none;
+          z-index: 5;
+        }
+        .slider-btn {
+          pointer-events: auto;
+          background: rgba(0,0,0,0.45);
+          border: none;
+          color: white;
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          font-size: 18px;
+          cursor: pointer;
+          transition: 0.3s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .slider-btn:hover { background: rgba(255,255,255,0.9); color: black; }
+        .slider-dots {
+          position: absolute;
+          bottom: 8px;
+          left: 50%;
+          transform: translateX(-50%);
+          display: flex;
+          gap: 6px;
+          z-index: 6;
+        }
+        .dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: rgba(255,255,255,0.5);
+          cursor: pointer;
+          transition: 0.3s;
+          border: none;
+        }
+        .dot.active { background: #fff; transform: scale(1.3); }
+
           .control-bar { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 16px; gap: 8px; flex-wrap: wrap; }
           .btn-add-news { background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: white; border: none; padding: 10px 18px; border-radius: 999px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(39,164,243,0.35); white-space: nowrap; }
           .categories { display: flex; overflow-x: auto; flex-wrap: nowrap; gap: 8px; padding: 6px 0 4px; margin: 4px 0 10px; -webkit-overflow-scrolling: touch; width: 100%; }
@@ -472,62 +740,94 @@ function getLocalDateTime() {
             .news-image-container { height: 200px; }
           }
         `}</style>
-        {/* Header */}
-        <div className="top-header">
-        <div className="header-content"> 
-            <div className="site-title" onClick={() => router.push('/user/dashboard')}>
-  <img 
-    src="/images/Mahasahyadri.png" 
-    alt="MahaSahyadri" 
-    className="site-logo"
-    style={{ height: '90px', width: 'auto', filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
-    onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-  />
-  <span style={{ fontSize: '28px', fontWeight: 800, marginLeft: '-6px' }}>MahaSahyadri</span>
-</div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+{/* Header */}
+<div className="top-header">
+  <div className="header-content">
+    {/* Logo */}
+    <div className="site-title" onClick={() => router.push('/user/dashboard')}>
+      <img 
+        src="/images/Mahasahyadri.png" 
+        alt="MahaSahyadri" 
+        className="site-logo"
+        style={{ height: '90px', width: 'auto', filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
+        onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+      />
+      <span style={{ fontSize: '28px', fontWeight: 800, marginLeft: '-6px' }}>MahaSahyadri</span>
+    </div>
 
-  {/* Date */}
-  <div style={{ fontSize: '12px', fontWeight: 500, whiteSpace: 'nowrap' }}>
-    {language === 'mr'
-      ? marathiDate
-      : new Date().toLocaleDateString('en-IN', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-  })}
-  </div>
-
-  {/* Language */}
-  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-    <span style={{ fontSize: '13px', fontWeight: 500 }}>
-      {language === 'mr' ? 'भाषा:' : 'Language:'}
-    </span>
-    <select
-      value={language}
-      onChange={(e) => setLanguage(e.target.value as 'en' | 'mr')}
-      style={{
-        borderRadius: '6px',
-        border: '1px solid #ccc',
-        backgroundColor: '#fff',
-        color: '#000',
-        cursor: 'pointer',
-        outline: 'none'
-      }}
-    >
-      <option value="en">English</option>
-      <option value="mr">मराठी</option>
-    </select>
-  </div>
-</div>
+    {/* Search Bar - Center */}
+    <div className="search-bar-wrapper">
+      <input
+        type="text"
+        className="search-input"
+        value={searchQuery}
+        onChange={e => handleSearch(e.target.value)}
+        placeholder={language === 'mr' ? '🔍 बातमी शोधा...' : '🔍 Search news...'}
+        onFocus={() => searchQuery.length >= 2 && setShowSearchResults(true)}
+      />
+      <button className="search-btn">
+        {language === 'mr' ? 'शोधा' : 'Search'}
+      </button>
+      {showSearchResults && (
+        <div className="search-dropdown">
+          {isSearching ? (
+            <div style={{ padding: '16px', textAlign: 'center', color: '#888' }}>
+              {language === 'mr' ? 'शोधत आहे...' : 'Searching...'}
             </div>
-            <div className="breaking-news" style={{ marginTop: '14px' }}>
-              <span className="breaking-label">🔴 {t.breaking}</span>
-              <div className="news-ticker-wrapper">
-                <div className="news-ticker" ref={tickerRef}>
-                  {breakingNews.map((title, i) => <span key={i}>{title} &nbsp;&nbsp;&nbsp;</span>)}
+          ) : searchResults.length === 0 ? (
+            <div style={{ padding: '16px', textAlign: 'center', color: '#888' }}>
+              {language === 'mr' ? 'कोणतीही बातमी सापडली नाही' : 'No news found'}
+            </div>
+          ) : (
+            searchResults.map(item => (
+              <div
+                key={item.Id}
+                className="search-item"
+                onClick={() => { router.push(`/admin/news/${item.Id}?admin=1`); setShowSearchResults(false); setSearchQuery(''); }}
+              >
+                {item.Gallery?.[0] ? (
+                  <img src={item.Gallery[0]} className="search-item-img" alt="" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                ) : (
+                  <div className="search-item-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📷</div>
+                )}
+                <div>
+                  <div className="search-item-title">{item.Title}</div>
+                  <div className="search-item-meta">📅 {getRelativeTime(item.PublishDate, language)} • 👤 {item.Author}</div>
                 </div>
               </div>
-            </div>
-          </div>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+
+    {/* Date + Language - Right */}
+    <div className="header-date-lang">
+      <span style={{ whiteSpace: 'nowrap', fontSize: '12px' }}>
+        {language === 'mr' ? marathiDate : new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+      </span>
+      <span style={{ fontSize: '12px' }}>{language === 'mr' ? 'भाषा:' : 'Language:'}</span>
+      <select
+        value={language}
+        onChange={(e) => setLanguage(e.target.value as 'en' | 'mr')}
+        style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #ccc', backgroundColor: '#fff', color: '#000', fontWeight: '500', cursor: 'pointer', fontSize: '12px' }}
+      >
+        <option value="en">English</option>
+        <option value="mr">मराठी</option>
+      </select>
+    </div>
+  </div>
+
+  {/* Breaking News */}
+  <div className="breaking-news" style={{ marginTop: '14px' }}>
+    <span className="breaking-label">🔴 {t.breaking}</span>
+    <div className="news-ticker-wrapper">
+      <div className="news-ticker" ref={tickerRef}>
+        {breakingNews.map((title, i) => <span key={i}>{title} &nbsp;&nbsp;&nbsp;</span>)}
+      </div>
+    </div>
+  </div>
+</div>
         
         <div className="container">
           {/* Hero Slider */}
