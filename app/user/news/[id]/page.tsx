@@ -26,6 +26,10 @@ export default function UserNewsDetailPage() {
   const id = params?.id;
   const router = useRouter();
   const { language, setLanguage } = useLanguage();
+
+  const [translatedTitle, setTranslatedTitle] = useState('');
+const [translatedContent, setTranslatedContent] = useState('');
+const [isTranslating, setIsTranslating] = useState(false);
   const t = translations[language] || translations.en;
   const [news, setNews] = useState<NewsDetail | null>(null);
   const [mainImage, setMainImage] = useState('');
@@ -47,6 +51,15 @@ export default function UserNewsDetailPage() {
       hasFetched.current = true;
     }
   }, [id]);
+
+   useEffect(() => {
+  if (language === 'en' && news) {
+    translateNews(news.Title, news.Content);
+  } else {
+    setTranslatedTitle('');
+    setTranslatedContent('');
+  }
+}, [language, news]);
 
   async function fetchCategories() {
     try {
@@ -82,6 +95,31 @@ export default function UserNewsDetailPage() {
     setMainImage(src);
     setActiveImg(idx);
   }
+
+  async function translateNews(title: string, content: string) {
+  setIsTranslating(true);
+  try {
+    const [titleRes, contentRes] = await Promise.all([
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: [title] })
+      }),
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: [content] })
+      })
+    ]);
+    const [td, cd] = await Promise.all([titleRes.json(), contentRes.json()]);
+    if (td.status === 'OK') setTranslatedTitle(td.results[0]);
+    if (cd.status === 'OK') setTranslatedContent(cd.results[0]);
+  } catch (err) {
+    console.error('Translation error:', err);
+  } finally {
+    setIsTranslating(false);
+  }
+}
 
   async function submitFeedback() {
     if (!feedbackForm.name.trim() || !feedbackForm.email.trim() || !feedbackForm.message.trim()) {
@@ -190,7 +228,10 @@ export default function UserNewsDetailPage() {
         </button>
 
         <div className="news-card">
-          <h1 className="news-title">{news.Title}</h1>
+          <h1 className="news-title">
+  {isTranslating ? '⏳ Translating...'
+    : (language === 'en' && translatedTitle ? translatedTitle : news.Title)}
+</h1>
           <div className="news-meta">
             <span>📅 {formatDate(news.PublishDate, language)}</span>
             <span>|</span>
@@ -207,16 +248,16 @@ export default function UserNewsDetailPage() {
               onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
           )}
 
-              <div
-            style={{
-              fontSize: '18px',
-              lineHeight: '1.8',
-              whiteSpace: 'pre-wrap'
-            }}
-            dangerouslySetInnerHTML={{
-              __html: news.Content
-            }}
-          />
+           <div
+  style={{
+    fontSize: '18px',
+    lineHeight: '1.8',
+    whiteSpace: 'pre-wrap'
+  }}
+  dangerouslySetInnerHTML={{
+    __html: language === 'en' && translatedContent ? translatedContent : news.Content
+  }}
+/>
           {news.Gallery && news.Gallery.length > 0 && (
             <div className="gallery">
               {news.Gallery.map((src, idx) => (

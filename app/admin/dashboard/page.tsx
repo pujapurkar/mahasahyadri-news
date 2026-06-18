@@ -62,6 +62,9 @@
     const [hover, setHover] = useState(false);
     const t = translations[language as 'en' | 'mr'];
 
+    const [translatedContent, setTranslatedContent] = useState<Record<number, { title: string; content: string }>>({});
+const [isTranslating, setIsTranslating] = useState(false);
+const [translatedWidgets, setTranslatedWidgets] = useState<Record<number, string>>({});
     const [editCatId, setEditCatId] = useState<number | null>(null);
     const [editCatMr, setEditCatMr] = useState('');
     const [editCatEn, setEditCatEn] = useState('');
@@ -149,6 +152,32 @@ useEffect(() => {
 
   return () => clearInterval(interval);
 }, []);
+
+
+// 🌐 AUTO TRANSLATE WHEN LANGUAGE CHANGES
+// 🌐 AUTO TRANSLATE WHEN LANGUAGE CHANGES
+useEffect(() => {
+  if (language === 'en' && news.length > 0) {
+    translateAllNews(news);
+  }
+}, [language]);
+
+useEffect(() => {
+  if (language === 'en') {
+    const allItems = [...mostViewed, ...heroes, ...vividha];
+    if (allItems.length > 0) translateWidgets(allItems);
+  } else {
+    setTranslatedWidgets({});
+  }
+}, [language, mostViewed, heroes, vividha]);
+
+useEffect(() => {
+  if (language === 'en' && news.length > 0) {
+    translateAllNews(news);
+  } else if (language === 'mr') {
+    setTranslatedContent({});
+  }
+}, [news]);
 
     // ---- Breaking ticker (Right to Left) ----
     useEffect(() => {
@@ -405,6 +434,64 @@ function getLocalDateTime() {
       const d = await r.json();
       if (d.status === 'OK') setComments(d.comments);
     }
+
+
+    async function translateAllNews(newsList: NewsItem[]) {
+  if (newsList.length === 0) return;
+  setIsTranslating(true);
+  try {
+    const [titleRes, contentRes] = await Promise.all([
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: newsList.map(n => n.Title) })
+      }),
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: newsList.map(n => n.Content) })
+      })
+    ]);
+
+    const [titleData, contentData] = await Promise.all([
+      titleRes.json(), contentRes.json()
+    ]);
+
+    if (titleData.status === 'OK' && contentData.status === 'OK') {
+      const map: Record<number, { title: string; content: string }> = {};
+      newsList.forEach((item, i) => {
+        map[item.Id] = {
+          title: titleData.results[i],
+          content: contentData.results[i]
+        };
+      });
+      setTranslatedContent(map);
+    }
+  } catch (err) {
+    console.error('Translation error:', err);
+  } finally {
+    setIsTranslating(false);
+  }
+}
+
+async function translateWidgets(items: WidgetItem[]) {
+  if (items.length === 0) return;
+  try {
+    const res = await fetch('/api/translateapi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts: items.map(i => i.Title) })
+    });
+    const data = await res.json();
+    if (data.status === 'OK') {
+      const map: Record<number, string> = {};
+      items.forEach((item, i) => {
+        if (item.Id) map[item.Id] = data.results[i];
+      });
+      setTranslatedWidgets(map);
+    }
+  } catch (err) { console.error(err); }
+}
 
     function shareNews(e: React.MouseEvent, id: number) {
       e.preventDefault(); e.stopPropagation();
@@ -791,7 +878,11 @@ function getLocalDateTime() {
                   <div className="search-item-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📷</div>
                 )}
                 <div>
-                  <div className="search-item-title">{item.Title}</div>
+                <div className="widget-item-title">
+  {language === 'en' && item.Id && translatedWidgets[item.Id]
+    ? translatedWidgets[item.Id]
+    : item.Title}
+</div>
                   <div className="search-item-meta">📅 {getRelativeTime(item.PublishDate, language)} • 👤 {item.Author}</div>
                 </div>
               </div>
@@ -904,7 +995,19 @@ function getLocalDateTime() {
     </button>
 
   </div>
-
+        {isTranslating && (
+  <div style={{
+    background: '#e3f2fd',
+    color: '#1565c0',
+    padding: '10px 16px',
+    borderRadius: '8px',
+    marginBottom: '12px',
+    fontSize: '14px',
+    fontWeight: 600
+  }}>
+    ⏳ Translating to English...
+  </div>
+)}
           {/* Main Layout */}
           <div className="main-layout">
             {/* News Section */}
@@ -949,12 +1052,18 @@ function getLocalDateTime() {
                      <span className="news-category">
                       {categoryMap[item.Category] || item.Category}
                     </span>
-                      <h3 className="news-title">
-                        <a href={`/admin/news/${item.Id}?admin=1`} onClick={e => { e.preventDefault(); router.push(`/admin/news/${item.Id}?admin=1`); }}>
-                        {item.Title}
-                        </a>
-                      </h3>
-                      <p className="news-excerpt">{truncateText(item.Content, 180)}</p>
+                     <h3 className="news-title">
+  <a href={`/admin/news/${item.Id}?admin=1`} onClick={e => { e.preventDefault(); router.push(`/admin/news/${item.Id}?admin=1`); }}>
+    {language === 'en' && translatedContent[item.Id]
+      ? translatedContent[item.Id].title
+      : item.Title}
+  </a>
+</h3>
+<p className="news-excerpt">
+  {language === 'en' && translatedContent[item.Id]
+    ? truncateText(translatedContent[item.Id].content, 180)
+    : truncateText(item.Content, 180)}
+</p>
                     </div>
 
                     <div>
@@ -1005,7 +1114,11 @@ function getLocalDateTime() {
                 {mostViewed.map((item, i) => (
                   <div key={i} className="widget-item">
                     <a href={item.Url || `/user/news/${item.Id}?admin=1`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                      <div className="widget-item-title">{item.Title}</div>
+                     <div className="widget-item-title">
+  {language === 'en' && item.Id && translatedWidgets[item.Id]
+    ? translatedWidgets[item.Id]
+    : item.Title}
+</div>
                         <div className="widget-item-meta">{item.SubTitle}</div>
                     </a>
                   </div>
@@ -1016,7 +1129,11 @@ function getLocalDateTime() {
                 {heroes.map((item, i) => (
                   <div key={i} className="widget-item">
                     <a href={`/user/news/${item.Id}?admin=1`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                      <div className="widget-item-title">{item.Title}</div>
+                    <div className="widget-item-title">
+  {language === 'en' && item.Id && translatedWidgets[item.Id]
+    ? translatedWidgets[item.Id]
+    : item.Title}
+</div>
                       <div className="widget-item-meta">{item.SubTitle}</div>
                     </a>
                   </div>
@@ -1030,7 +1147,11 @@ function getLocalDateTime() {
                 {vividha.map((item, i) => (
                   <div key={i} className="widget-item">
                     <a href={`/user/news/${item.Id}?admin=1`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                      <div className="widget-item-title">{item.Title}</div>
+                      <div className="widget-item-title">
+  {language === 'en' && item.Id && translatedWidgets[item.Id]
+    ? translatedWidgets[item.Id]
+    : item.Title}
+</div>
                       <div className="widget-item-meta">{item.SubTitle}</div>
                     </a>
                   </div>
@@ -1326,7 +1447,9 @@ function getLocalDateTime() {
       
       <div style={{ padding: '12px 16px', borderBottom: '1px solid #eee', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{ fontWeight: 600 }}>प्रतिक्रिया</div>
+         <div style={{ fontWeight: 600 }}>
+  {language === 'mr' ? 'प्रतिक्रिया' : 'Comments'}
+</div>
           <div style={{ fontSize: '13px', color: '#666', marginTop: '2px' }}>{currentNewsTitle}</div>
         </div>
         <button onClick={() => setCommentsModal(false)} style={{ border: 'none', background: 'transparent', fontSize: '20px', cursor: 'pointer' }}>✕</button>
@@ -1334,7 +1457,9 @@ function getLocalDateTime() {
 
       <div style={{ padding: '12px 16px', overflowY: 'auto', flex: 1 }}>
         {comments.length === 0 ? (
-          <div style={{ color: '#777' }}>अजून कोणतीही प्रतिक्रिया नाही.</div>
+        <div style={{ color: '#777' }}>
+  {language === 'mr' ? 'अजून कोणतीही प्रतिक्रिया नाही.' : 'No comments yet.'}
+</div>
         ) : (
           comments.map((c: any) => (
             <div key={c.CommentId} style={{ marginBottom: '12px', padding: '10px', background: '#f9f9f9', borderRadius: '8px' }}>
@@ -1371,7 +1496,7 @@ function getLocalDateTime() {
                     gap: '5px'
                   }}
                 >
-                  💬 उत्तर द्या
+                💬 {language === 'mr' ? 'उत्तर द्या' : 'Reply'}
                 </button>
 
                 {/* Delete */}
@@ -1396,14 +1521,14 @@ function getLocalDateTime() {
                     type="text"
                     value={replyText}
                     onChange={e => setReplyText(e.target.value)}
-                    placeholder="उत्तर लिहा..."
+                   placeholder={language === 'mr' ? 'उत्तर लिहा...' : 'Write reply...'}
                     style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: '1px solid #ccc' }}
                   />
                   <button
                     onClick={() => submitReply(c.CommentId)}
                     style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer' }}
                   >
-                    पाठवा
+                    {language === 'mr' ? 'पाठवा' : 'Send'}
                   </button>
                 </div>
               )}
@@ -1442,9 +1567,9 @@ function getLocalDateTime() {
 
       {/* Bottom input same as it is */}
       <div style={{ borderTop: '1px solid #eee', padding: '10px 12px', display: 'flex', gap: '8px' }}>
-        <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="Admin प्रतिक्रिया लिहा..." style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: '1px solid #ddd', fontFamily: 'inherit', fontSize: '13px' }} />
+        <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder={language === 'mr' ? 'Admin प्रतिक्रिया लिहा...' : 'Write admin comment...'} style={{ flex: 1, padding: '8px 10px', borderRadius: '20px', border: '1px solid #ddd', fontFamily: 'inherit', fontSize: '13px' }} />
         <button onClick={submitComment} style={{ border: 'none', background: '#27A4F3', color: '#fff', padding: '8px 14px', borderRadius: '20px', cursor: 'pointer', fontSize: '13px', fontWeight: 600 }}>
-          पाठवा
+          {language === 'mr' ? 'पाठवा' : 'Send'}
         </button>
       </div>
 

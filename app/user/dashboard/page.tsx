@@ -29,6 +29,9 @@ export default function UserDashboard() {
   const router = useRouter();
 
   const { language, setLanguage } = useLanguage();
+  const [translatedContent, setTranslatedContent] = useState<Record<number, { title: string; content: string }>>({});
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [translatedWidgets, setTranslatedWidgets] = useState<Record<number, string>>({});
   const [breakingNews, setBreakingNews] = useState<string[]>([]);
   const [sliderNews, setSliderNews] = useState<SliderItem[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
@@ -79,6 +82,29 @@ export default function UserDashboard() {
   useEffect(() => {
     fetchAllData(activeCategory);
   }, [language]);
+
+useEffect(() => {
+  if (language === 'en' && news.length > 0) {
+    translateAllNews(news);
+  }
+}, [language]);
+
+useEffect(() => {
+  if (language === 'en' && news.length > 0) {
+    translateAllNews(news);
+  } else if (language === 'mr') {
+    setTranslatedContent({});
+  }
+}, [news]);
+
+useEffect(() => {
+  if (language === 'en') {
+    const allItems = [...mostViewed, ...heroes, ...vividha];
+    if (allItems.length > 0) translateWidgets(allItems);
+  } else {
+    setTranslatedWidgets({});
+  }
+}, [language, mostViewed, heroes, vividha]);
 
   async function fetchAllData(cat: string) {
     try {
@@ -278,6 +304,61 @@ export default function UserDashboard() {
     }
   }
  
+  async function translateAllNews(newsList: NewsItem[]) {
+  if (newsList.length === 0) return;
+  setIsTranslating(true);
+  try {
+    const [titleRes, contentRes] = await Promise.all([
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: newsList.map(n => n.Title) })
+      }),
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: newsList.map(n => n.Content) })
+      })
+    ]);
+    const [titleData, contentData] = await Promise.all([
+      titleRes.json(), contentRes.json()
+    ]);
+    if (titleData.status === 'OK' && contentData.status === 'OK') {
+      const map: Record<number, { title: string; content: string }> = {};
+      newsList.forEach((item, i) => {
+        map[item.Id] = {
+          title: titleData.results[i],
+          content: contentData.results[i]
+        };
+      });
+      setTranslatedContent(map);
+    }
+  } catch (err) {
+    console.error('Translation error:', err);
+  } finally {
+    setIsTranslating(false);
+  }
+}
+
+async function translateWidgets(items: WidgetItem[]) {
+  if (items.length === 0) return;
+  try {
+    const res = await fetch('/api/translateapi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts: items.map(i => i.Title) })
+    });
+    const data = await res.json();
+    if (data.status === 'OK') {
+      const map: Record<number, string> = {};
+      items.forEach((item, i) => {
+        if (item.Id) map[item.Id] = data.results[i];
+      });
+      setTranslatedWidgets(map);
+    }
+  } catch (err) { console.error(err); }
+}
+
   async function handleSearch(q: string) {
   setSearchQuery(q);
   if (q.trim().length < 2) {
@@ -936,6 +1017,15 @@ export default function UserDashboard() {
           ))}
         </div>
 
+          {isTranslating && (
+  <div style={{
+    background: '#e3f2fd', color: '#1565c0',
+    padding: '10px 16px', borderRadius: '8px',
+    marginBottom: '12px', fontSize: '14px', fontWeight: 600
+  }}>
+    ⏳ Translating to English...
+  </div>
+)}
         {/* ===== MAIN LAYOUT ===== */}
         <div className="main-layout">
 
@@ -968,8 +1058,16 @@ export default function UserDashboard() {
                 <div className="news-content-area">
                   <div>
                     <span className="news-category">{categoryMap[item.Category] || item.Category}</span>
-                    <h3 className="news-title">{item.Title}</h3>
-                    <p className="news-excerpt">{truncateText(item.Content, 180)}</p>
+                  <h3 className="news-title">
+  {language === 'en' && translatedContent[item.Id]
+    ? translatedContent[item.Id].title
+    : item.Title}
+</h3>
+<p className="news-excerpt">
+  {language === 'en' && translatedContent[item.Id]
+    ? truncateText(translatedContent[item.Id].content, 180)
+    : truncateText(item.Content, 180)}
+</p>
                   </div>
 
                   <div className="news-meta">
@@ -1008,7 +1106,11 @@ export default function UserDashboard() {
               <h3 className="widget-title">⛰️ {translations[language].mostViewed}</h3>
               {mostViewed.map((item, i) => (
                 <div key={i} className="widget-item" onClick={() => router.push(`/user/news/${item.Id}`)}>
-                  <div className="widget-item-title">{item.Title}</div>
+                 <div className="widget-item-title">
+  {language === 'en' && item.Id && translatedWidgets[item.Id]
+    ? translatedWidgets[item.Id]
+    : item.Title}
+</div>
                   <div className="widget-item-meta">{item.SubTitle}</div>
                 </div>
               ))}
@@ -1017,7 +1119,11 @@ export default function UserDashboard() {
               <h3 className="widget-title">🎭 {translations[language].heroes}</h3>
               {heroes.map((item, i) => (
                 <div key={i} className="widget-item" onClick={() => router.push(`/user/news/${item.Id}`)}>
-                  <div className="widget-item-title">{item.Title}</div>
+                 <div className="widget-item-title">
+  {language === 'en' && item.Id && translatedWidgets[item.Id]
+    ? translatedWidgets[item.Id]
+    : item.Title}
+</div>
                   <div className="widget-item-meta">{item.SubTitle}</div>
                 </div>
               ))}
@@ -1026,8 +1132,12 @@ export default function UserDashboard() {
               <h3 className="widget-title">📰 {translations[language].vividha}</h3>
               {vividha.map((item, i) => (
                 <div key={i} className="widget-item" onClick={() => router.push(`/user/news/${item.Id}`)}>
-                  <div className="widget-item-title">{item.Title}</div>
-                  <div className="widget-item-meta">{item.SubTitle}</div>
+                 <div className="widget-item-title">
+  {language === 'en' && item.Id && translatedWidgets[item.Id]
+    ? translatedWidgets[item.Id]
+    : item.Title}
+</div>
+<div className="widget-item-meta">{item.SubTitle}</div>
                 </div>
               ))}
             </div>

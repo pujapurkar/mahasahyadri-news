@@ -23,6 +23,11 @@ export default function AdminNewsDetailPage() {
   const id = params?.id;
   const router = useRouter();
   const { language, setLanguage } = useLanguage();
+
+  const [translatedTitle, setTranslatedTitle] = useState('');
+  const [translatedContent, setTranslatedContent] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+
   const [news, setNews] = useState<NewsDetail | null>(null);
   const [mainImage, setMainImage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -36,6 +41,15 @@ export default function AdminNewsDetailPage() {
       fetchNews();
     }
   }, [id]);
+
+useEffect(() => {
+  if (language === 'en' && news) {
+    translateNews(news.Title, news.Content);
+  } else {
+    setTranslatedTitle('');
+    setTranslatedContent('');
+  }
+}, [language, news]);
 
   async function fetchNews() {
     try {
@@ -64,6 +78,30 @@ export default function AdminNewsDetailPage() {
     }
   }
 
+  async function translateNews(title: string, content: string) {
+  setIsTranslating(true);
+  try {
+    const [titleRes, contentRes] = await Promise.all([
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: [title] })
+      }),
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: [content] })
+      })
+    ]);
+    const [td, cd] = await Promise.all([titleRes.json(), contentRes.json()]);
+    if (td.status === 'OK') setTranslatedTitle(td.results[0]);
+    if (cd.status === 'OK') setTranslatedContent(cd.results[0]);
+  } catch (err) {
+    console.error('Translation error:', err);
+  } finally {
+    setIsTranslating(false);
+  }
+}
   function setMainImg(src: string, idx: number) {
     setMainImage(src);
     setActiveImg(idx);
@@ -168,9 +206,9 @@ export default function AdminNewsDetailPage() {
             boxShadow: '0 4px 20px rgba(0,0,0,0.08)'
           }}>
             
-            <h1 style={{ fontSize: '32px', marginBottom: '10px' }}>
-             {news.Title}
-            </h1>
+           <h1 style={{ fontSize: '32px', marginBottom: '10px' }}>
+  {isTranslating ? '⏳ Translating...' : (language === 'en' && translatedTitle ? translatedTitle : news.Title)}
+</h1>
 
             <div style={{
               color: '#666',
@@ -197,14 +235,14 @@ export default function AdminNewsDetailPage() {
             )}
 
 
-            <div
+ <div
   style={{
     fontSize: '18px',
     lineHeight: '1.8',
     whiteSpace: 'pre-wrap'
   }}
   dangerouslySetInnerHTML={{
-    __html: news.Content
+    __html: language === 'en' && translatedContent ? translatedContent : news.Content
   }}
 />
 
