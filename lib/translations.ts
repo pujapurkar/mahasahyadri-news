@@ -45,7 +45,9 @@ publish: "Publish",
   aboutP3: "Our goal — not just our effort — is to make 'MahaSahyadri' the trusted platform for information on forts, mountain passes, forests, heritage structures, nature and environment.",
   aboutP4: "Our resolve is to bring the history of Sahyadri — witness to the valor of Chhatrapati Shivaji Maharaj and the Mavlas — along with its present geography and cultural happenings, to Sahyadri lovers in simple language.",
   aboutP5: "MahaSahyadri will not merely be a repository of information, but an ongoing movement dedicated to the conservation, art, history and adventure of Sahyadri. We humbly invite you to join the MahaSahyadri family as a reader, writer or contributor.",
-  },
+ 
+     logout: "Logout",
+},
   mr: {
     title: "महासह्याद्री",
     breaking: "ताज्या बातम्या",
@@ -95,5 +97,8 @@ publish: "Publish",
       aboutP3: "गडकिल्ले, घाटवाटा, जंगले, स्थापत्यशिल्पे, निसर्ग आणि पर्यावरणविषयक घडामोडी जाणून घेण्यासाठी 'महासह्याद्री' हे एक हक्काचे विश्वासू माध्यम ठरावे, असे आमुचे प्रयत्न नव्हे; तर ध्येय आहे.",
       aboutP4: "हिंदवी स्वराज्याचे संस्थापक छत्रपती शिवाजी महाराज आणि मावळ्यांच्या पराक्रमांचा साक्षीदार असलेला, संतांची भूमी असलेला सह्याद्रीमधील इतिहास, वर्तमानातील भूगोल आणि या सह्याद्रीच्या कुशीत वसलेल्या मानवी संस्कृतीमधील घडामोडी सहज सोप्या भाषेत सह्यप्रेमींसमोर आणण्याचा आमचा संकल्प आहे.",
       aboutP5: "'महासह्याद्री' वेबसाईट म्हणजे केवळ माहितीचे भांडार न राहता सह्याद्रीचे संवर्धन, कला, इतिहास आणि येथील साहसाला वाहिलेली एक अखंड चळवळ ठरेल. वाचक, लेखक आणि दाते म्हणून तुम्ही महासह्याद्री परिवारात हक्काने सामील व्हावे, हेच विनम्र आवाहन.",
-}
+
+     logout: "बाहेर पडा",
+    }
+
 } as const;

@@ -938,6 +938,7 @@ async function translateWidgets(items: WidgetItem[]) {
         <option value="en" style={{ color: '#000' }}>English</option>
         <option value="mr" style={{ color: '#000' }}>मराठी</option>
       </select>
+      
     </div>
   </div>
 

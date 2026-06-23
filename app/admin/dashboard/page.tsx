@@ -4,8 +4,9 @@
   import { getCurrentDate, getRelativeTime, formatDate, parseGallery, truncateText, toMarathiDigits } from '@/lib/utils';
   import { useLanguage } from '@/lib/LanguageContext';
   import { translations } from '@/lib/translations';
-  
-  
+  import { MdLogout } from "react-icons/md";
+  import Image from "next/image";
+
   interface NewsItem {
     Id: number;
     Title: string;
@@ -55,6 +56,46 @@
     const [catEn, setCatEn] = useState('');
     const [aboutModal, setAboutModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    const [subAdminRequests, setSubAdminRequests] = useState([]);
+    const [showNotifications, setShowNotifications] = useState(false);
+
+    const [role, setRole] = useState("");
+
+async function updateStatus(id: number, status: string) {
+  try {
+    // Step 1: आधी email पाठवा (Approved असेल तर)
+    if (status === "Approved") {
+      const emailRes = await fetch("/api/subadmin/send-approval-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const emailData = await emailRes.json();
+      console.log("Email result:", emailData);
+
+      if (emailData.status !== "OK") {
+        alert("Email sending failed: " + emailData.message);
+        return; // email fail झाला तर status update करू नका
+      }
+    }
+
+    // Step 2: मग status update करा
+    const res = await fetch("/api/admin/subadmin-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, status }),
+    });
+    const data = await res.json();
+
+    if (data.status === "OK") {
+      loadRequests(); // UI refresh — Pending list मधून निघून जाईल
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong. Please try again.");
+  }
+}
     const [searchResults, setSearchResults] = useState<NewsItem[]>([]);
     const [isSearching, setIsSearching] = useState(false);
     const [showSearchResults, setShowSearchResults] = useState(false);
@@ -63,8 +104,8 @@
     const t = translations[language as 'en' | 'mr'];
 
     const [translatedContent, setTranslatedContent] = useState<Record<number, { title: string; content: string }>>({});
-const [isTranslating, setIsTranslating] = useState(false);
-const [translatedWidgets, setTranslatedWidgets] = useState<Record<number, string>>({});
+    const [isTranslating, setIsTranslating] = useState(false);
+    const [translatedWidgets, setTranslatedWidgets] = useState<Record<number, string>>({});
     const [editCatId, setEditCatId] = useState<number | null>(null);
     const [editCatMr, setEditCatMr] = useState('');
     const [editCatEn, setEditCatEn] = useState('');
@@ -76,6 +117,26 @@ const [translatedWidgets, setTranslatedWidgets] = useState<Record<number, string
     ])
   );
   
+async function loadRequests() {
+  try {
+    const res = await fetch("/api/admin/subadmin-requests");
+    const data = await res.json();
+
+    console.log("REQUESTS =", data);
+
+    setSubAdminRequests(data);
+  } catch (err) {
+    console.error(err);
+  }
+}
+  useEffect(() => {
+  loadRequests();
+}, []);
+
+useEffect(() => {
+  const userRole = localStorage.getItem("role");
+  setRole(userRole || "");
+}, []);
     // ---- Load all data ----
   useEffect(() => {
    setMarathiDate(getCurrentDate(language));
@@ -500,6 +561,15 @@ async function translateWidgets(items: WidgetItem[]) {
       else { navigator.clipboard.writeText(url); alert('लिंक कॉपी झाली!\n' + url); }
     }
 
+const handleLogout = () => {
+  localStorage.removeItem("role");
+
+  if (role === "admin") {
+    window.location.href = "/admin/login";
+  } else {
+    window.location.href = "/subadmin/login";
+  }
+};
     // const categoryList = ['सर्व बातम्या', 'किल्ले', 'घाटवाटा', 'मंदिरे', 'वनसंपदा', 'पशुपक्षी', 'विविध'];
 
   return (
@@ -894,6 +964,42 @@ async function translateWidgets(items: WidgetItem[]) {
 
     {/* Date + Language - Right */}
     <div className="header-date-lang">
+      
+      {role === "admin" && (
+
+      <div style={{ position: "relative" }}>
+  <button
+   
+    onClick={() => setShowNotifications(!showNotifications)}
+    style={{
+      background: "transparent",
+      border: "none",
+      fontSize: "22px",
+      cursor: "pointer",
+      color: "white"
+    }}
+  >
+    🔔
+  </button>
+
+  {subAdminRequests.length > 0 && (
+    <span
+      style={{
+        position: "absolute",
+        top: "-5px",
+        right: "-5px",
+        background: "red",
+        color: "white",
+        borderRadius: "50%",
+        padding: "2px 6px",
+        fontSize: "11px"
+      }}
+    >
+      {subAdminRequests.length}
+    </span>
+  )}
+</div>
+)}
       <span style={{ whiteSpace: 'nowrap', fontSize: '12px' }}>
         {language === 'mr' ? marathiDate : new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
       </span>
@@ -906,9 +1012,111 @@ async function translateWidgets(items: WidgetItem[]) {
         <option value="en">English</option>
         <option value="mr">मराठी</option>
       </select>
+<button
+  onClick={handleLogout}
+  title={t.logout}
+  style={{
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    marginLeft: "10px",
+    padding: 0,
+  }}
+>
+  <Image
+    src="/icons/logout.png"
+    alt="Logout"
+    width={32}
+    height={32}
+  />
+</button>
     </div>
   </div>
+{role === "admin" && showNotifications && (
+  <div style={{
+    position: "absolute", right: "20px", top: "90px",
+    background: "#fff", width: "340px", borderRadius: "12px",
+    border: "0.5px solid rgba(0,0,0,0.12)",
+    boxShadow: "0 4px 20px rgba(0,0,0,0.15)",
+    zIndex: 9999, overflow: "hidden", fontFamily: "inherit"
+  }}>
+    {/* Header */}
+    <div style={{
+      padding: "12px 14px", borderBottom: "1px solid #f0f0f0",
+      display: "flex", justifyContent: "space-between", alignItems: "center"
+    }}>
+      <h4 style={{ margin: 0, fontSize: "14px", fontWeight: 600, color: "#111" }}>
+        Sub Admin Requests
+      </h4>
+      <span style={{
+        background: "#e8f4fd", color: "#185FA5", fontSize: "11px",
+        fontWeight: 600, padding: "2px 8px", borderRadius: "999px"
+      }}>
+        {subAdminRequests.length}
+      </span>
+    </div>
 
+    {/* Body */}
+    <div style={{ maxHeight: "420px", overflowY: "auto", padding: "10px" }}>
+      {subAdminRequests.length === 0 ? (
+        <p style={{ textAlign: "center", color: "#888", fontSize: "13px", padding: "20px 0" }}>
+          No Requests
+        </p>
+      ) : (
+        subAdminRequests.map((item: any, index: number) => (
+          <div key={item.Id} style={{
+            background: "#f8f9fa", border: "0.5px solid #e0e0e0",
+            borderRadius: "8px", padding: "12px", marginBottom: "8px"
+          }}>
+            {/* Number */}
+            <div style={{ fontSize: "10px", color: "#999", fontWeight: 600, marginBottom: "6px", letterSpacing: "0.5px" }}>
+              REQUEST #{index + 1}
+            </div>
+            {/* Name */}
+            <div style={{ fontSize: "15px", fontWeight: 700, color: "#111", marginBottom: "6px" }}>
+              {item.Username}
+            </div>
+            {/* Email + Phone */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "3px", marginBottom: "8px" }}>
+              <span style={{ fontSize: "12px", color: "#555" }}>✉️ {item.Email}</span>
+              <span style={{ fontSize: "12px", color: "#555" }}>📞 {item.Mobile}</span>
+            </div>
+            {/* Status Badge */}
+            <div style={{ marginBottom: "10px" }}>
+              <span style={{
+                display: "inline-block", fontSize: "11px", fontWeight: 600,
+                padding: "3px 10px", borderRadius: "999px",
+                background: item.Status === "Approved" ? "#eaf3de" : item.Status === "Rejected" ? "#FCEBEB" : "#FAEEDA",
+                color: item.Status === "Approved" ? "#3B6D11" : item.Status === "Rejected" ? "#A32D2D" : "#854F0B"
+              }}>
+                {item.Status === "Approved" ? "✔ " : item.Status === "Rejected" ? "✕ " : "⏳ "}{item.Status}
+              </span>
+            </div>
+            {/* Buttons */}
+            <div style={{ display: "flex", gap: "6px" }}>
+              <button
+                onClick={() => updateStatus(item.Id, "Approved")}
+                style={{
+                  flex: 1, padding: "6px 0", background: "#eaf3de", color: "#3B6D11",
+                  border: "1px solid #C0DD97", borderRadius: "6px",
+                  fontSize: "12px", fontWeight: 600, cursor: "pointer"
+                }}
+              >Approve</button>
+              <button
+                onClick={() => updateStatus(item.Id, "Rejected")}
+                style={{
+                  flex: 1, padding: "6px 0", background: "#FCEBEB", color: "#A32D2D",
+                  border: "1px solid #F7C1C1", borderRadius: "6px",
+                  fontSize: "12px", fontWeight: 600, cursor: "pointer"
+                }}
+              >Reject</button>
+            </div>
+          </div>
+        ))
+      )}
+    </div>
+  </div>
+)}
   {/* Breaking News */}
   <div className="breaking-news" style={{ marginTop: '14px' }}>
     <span className="breaking-label">🔴 {t.breaking}</span>

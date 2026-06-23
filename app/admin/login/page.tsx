@@ -31,6 +31,7 @@ export default function AdminLoginPage() {
       });
       const data = await res.json();
       if (data.status === 'OK') {
+        localStorage.setItem("role", "admin");
         router.push('/admin/dashboard');
       } else {
         alert('Invalid username or password. Please try again.');
@@ -173,11 +174,38 @@ export default function AdminLoginPage() {
           </button>
 
           {/* Forgot Password */}
-          <div style={{ textAlign: 'right', marginTop: '15px' }}>
-            <Link href="/admin/forgot-password" style={{ color: '#1e88e5', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>
-              Forgot Password?
-            </Link>
-          </div>
+          <div
+  style={{
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginTop: '15px',
+     gap: '20px'
+  }}
+>
+  <Link
+    href="/subadmin/register"
+    style={{
+      color: '#1e88e5',
+      textDecoration: 'none',
+      fontSize: '14px',
+      fontWeight: 500
+    }}
+  >
+    Registration With Sub Admin
+  </Link>
+
+  <Link
+    href="/admin/forgot-password"
+    style={{
+      color: '#1e88e5',
+      textDecoration: 'none',
+      fontSize: '14px',
+      fontWeight: 500
+    }}
+  >
+    Forgot Password?
+  </Link>
+</div>
         </form>
       </div>
     </>
