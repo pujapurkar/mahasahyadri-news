@@ -62,9 +62,11 @@
 
     const [role, setRole] = useState("");
 
+    const [rejectPopup, setRejectPopup] = useState<{ name: string } | null>(null);
+    const [approvePopup, setApprovePopup] = useState<{ name: string } | null>(null);
+
 async function updateStatus(id: number, status: string) {
   try {
-    // Step 1: आधी email पाठवा (Approved असेल तर)
     if (status === "Approved") {
       const emailRes = await fetch("/api/subadmin/send-approval-email", {
         method: "POST",
@@ -72,15 +74,20 @@ async function updateStatus(id: number, status: string) {
         body: JSON.stringify({ id }),
       });
       const emailData = await emailRes.json();
-      console.log("Email result:", emailData);
-
       if (emailData.status !== "OK") {
         alert("Email sending failed: " + emailData.message);
-        return; // email fail झाला तर status update करू नका
+        return;
       }
     }
 
-    // Step 2: मग status update करा
+    if (status === "Rejected") {
+      await fetch("/api/subadmin/send-rejection-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+    }
+
     const res = await fetch("/api/admin/subadmin-requests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -89,7 +96,15 @@ async function updateStatus(id: number, status: string) {
     const data = await res.json();
 
     if (data.status === "OK") {
-      loadRequests(); // UI refresh — Pending list मधून निघून जाईल
+      if (status === "Rejected") {
+        const rejectedUser = (subAdminRequests as any[]).find((r: any) => r.Id === id);
+        setRejectPopup({ name: rejectedUser?.Username || "User" });
+      }
+      if (status === "Approved") {
+    const approvedUser = (subAdminRequests as any[]).find((r: any) => r.Id === id);
+    setApprovePopup({ name: approvedUser?.Username || "User" });
+  }
+      loadRequests();
     }
   } catch (err) {
     console.error(err);
@@ -573,7 +588,102 @@ const handleLogout = () => {
     // const categoryList = ['सर्व बातम्या', 'किल्ले', 'घाटवाटा', 'मंदिरे', 'वनसंपदा', 'पशुपक्षी', 'विविध'];
 
   return (
+
+
       <>
+{/* Reject Popup */}
+{rejectPopup && (
+  <div style={{
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+    zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: '20px'
+  }}>
+    <div style={{
+      background: '#fff', borderRadius: '16px', padding: '32px 28px',
+      maxWidth: '380px', width: '100%', textAlign: 'center',
+      boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+    }}>
+      <div style={{
+        width: '68px', height: '68px', borderRadius: '50%',
+        background: '#fff0f0', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', margin: '0 auto 18px', border: '2px solid #f5c6c6'
+      }}>
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#c0392b" strokeWidth="2.5">
+          <line x1="18" y1="6" x2="6" y2="18" />
+          <line x1="6" y1="6" x2="18" y2="18" />
+        </svg>
+      </div>
+      <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111', marginBottom: '10px' }}>
+        Request Rejected
+      </h3>
+      <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.7', marginBottom: '22px' }}>
+  <strong>{rejectPopup.name}</strong> यांचा Sub Admin request नाकारण्यात आला.<br />
+  त्यांना rejection email पाठवला गेला आहे.
+  <br /><br />
+  <strong>{rejectPopup.name}</strong>'s Sub Admin request has been rejected.<br />
+  A rejection email has been sent to them.
+</p>
+      <button
+  onClick={() => setRejectPopup(null)}
+  style={{
+    width: '100%', padding: '11px',
+    background: 'linear-gradient(135deg, #e53935 0%, #ef5350 100%)',
+    color: '#fff', border: 'none', borderRadius: '8px',
+    fontSize: '14px', fontWeight: 600, cursor: 'pointer'
+  }}
+>
+  OK, समजलं / Got it
+</button>
+    </div>
+  </div>
+)}
+
+{/* Approve Popup */}
+{approvePopup && (
+  <div style={{
+    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+    zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+    padding: '20px'
+  }}>
+    <div style={{
+      background: '#fff', borderRadius: '16px', padding: '32px 28px',
+      maxWidth: '380px', width: '100%', textAlign: 'center',
+      boxShadow: '0 10px 40px rgba(0,0,0,0.2)'
+    }}>
+      <div style={{
+        width: '68px', height: '68px', borderRadius: '50%',
+        background: '#eaf3de', display: 'flex', alignItems: 'center',
+        justifyContent: 'center', margin: '0 auto 18px', border: '2px solid #C0DD97'
+      }}>
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" strokeWidth="2.5">
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
+      </div>
+      <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#111', marginBottom: '10px' }}>
+        Request Approved
+      </h3>
+      <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.7', marginBottom: '22px' }}>
+        <strong>{approvePopup.name}</strong> यांचा Sub Admin request मंजूर करण्यात आला.<br />
+        त्यांना approval email पाठवला गेला आहे.
+        <br /><br />
+        <strong>{approvePopup.name}</strong>'s Sub Admin request has been approved.<br />
+        An approval email has been sent to them.
+      </p>
+      <button
+        onClick={() => setApprovePopup(null)}
+        style={{
+          width: '100%', padding: '11px',
+          background: 'linear-gradient(135deg, #43a047 0%, #66bb6a 100%)',
+          color: '#fff', border: 'none', borderRadius: '8px',
+          fontSize: '14px', fontWeight: 600, cursor: 'pointer'
+        }}
+      >
+        OK, समजलं / Got it
+      </button>
+    </div>
+  </div>
+)}
+
         <style>{`
           * { margin: 0; padding: 0; box-sizing: border-box; }
           html { overflow-x: hidden; width: 100%; }

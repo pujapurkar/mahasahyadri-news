@@ -44,6 +44,31 @@ const [isTranslating, setIsTranslating] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({ name: '', email: '', message: '' });
   const [feedbackLoading, setFeedbackLoading] = useState(false);
 
+  // ---- Disable right-click, copy, devtools shortcuts (content protection) ----
+  useEffect(() => {
+    const disableRightClick = (e: MouseEvent) => e.preventDefault();
+    const disableCopy = (e: ClipboardEvent) => e.preventDefault();
+    const disableKeys = (e: KeyboardEvent) => {
+      if (
+        (e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 's')) ||
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J'))
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', disableRightClick);
+    document.addEventListener('copy', disableCopy);
+    document.addEventListener('keydown', disableKeys);
+
+    return () => {
+      document.removeEventListener('contextmenu', disableRightClick);
+      document.removeEventListener('copy', disableCopy);
+      document.removeEventListener('keydown', disableKeys);
+    };
+  }, []);
+
   useEffect(() => {
     if (id && !hasFetched.current) {
       fetchNews();
@@ -171,7 +196,26 @@ const [isTranslating, setIsTranslating] = useState(false);
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&family=Poppins:wght@300;400;500;600;700&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Noto Sans Devanagari','Poppins',sans-serif; background: #f5f7fa; }
+        body {
+          font-family: 'Noto Sans Devanagari','Poppins',sans-serif;
+          background: #f5f7fa;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+        input, textarea {
+          -webkit-user-select: text;
+          -moz-user-select: text;
+          -ms-user-select: text;
+          user-select: text;
+        }
+        img {
+          -webkit-user-drag: none;
+          user-drag: none;
+          pointer-events: none;
+        }
+        .gallery img { pointer-events: auto; }
         .container { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
         .header { background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: white; padding: 15px 0; box-shadow: 0 2px 10px rgba(39,164,243,0.3); }
         .back-link { color: #1e88d4; text-decoration: none; display: inline-block; margin: 20px 0 16px; font-weight: 600; font-size: 14px; }
@@ -245,7 +289,9 @@ const [isTranslating, setIsTranslating] = useState(false);
 
           {mainImage && (
             <img src={mainImage} alt={news.Title} className="main-img"
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              onContextMenu={(e) => e.preventDefault()}
+              draggable={false} />
           )}
 
            <div
@@ -264,7 +310,9 @@ const [isTranslating, setIsTranslating] = useState(false);
                 <img key={idx} src={src} alt={`Gallery ${idx + 1}`}
                   className={activeImg === idx ? 'active' : ''}
                   onClick={() => setMainImg(src, idx)}
-                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                  onContextMenu={(e) => e.preventDefault()}
+                  draggable={false} />
               ))}
             </div>
           )}

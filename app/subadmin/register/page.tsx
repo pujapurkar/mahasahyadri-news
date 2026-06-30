@@ -20,27 +20,52 @@ export default function SubAdminRegisterPage() {
 
   function validate() {
     const e = { username: '', email: '', mobile: '', password: '', confirmPassword: '' };
-    if (!username.trim()) e.username = 'Username is required';
+
+    // Username
+    if (!username.trim()) {
+      e.username = 'Username is required';
+    } else if (username.trim().length < 3) {
+      e.username = 'Username must be at least 3 characters';
+    } else if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+      e.username = 'Username can only contain letters, numbers, and underscores';
+    }
+
+    // Email
     if (!email.trim()) {
       e.email = 'Email is required';
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       e.email = 'Enter a valid email address';
     }
+
+    // Mobile — must start with 6-9 (Indian numbers)
     if (!mobile.trim()) {
       e.mobile = 'Mobile number is required';
     } else if (!/^[6-9]\d{9}$/.test(mobile)) {
-      e.mobile = 'Enter a valid 10-digit mobile number';
+      e.mobile = 'Enter a valid 10-digit mobile number starting with 6–9';
     }
-    if (!password.trim()) {
+
+    // Password
+    if (!password) {
       e.password = 'Password is required';
     } else if (password.length < 8) {
       e.password = 'Password must be at least 8 characters';
+    } else if (!/[A-Z]/.test(password)) {
+      e.password = 'Password must contain at least one uppercase letter';
+    } else if (!/[a-z]/.test(password)) {
+      e.password = 'Password must contain at least one lowercase letter';
+    } else if (!/[0-9]/.test(password)) {
+      e.password = 'Password must contain at least one number';
+    } else if (!/[@$!%*?&#]/.test(password)) {
+      e.password = 'Password must contain at least one special character (@$!%*?&#)';
     }
-    if (!confirmPassword.trim()) {
+
+    // Confirm Password
+    if (!confirmPassword) {
       e.confirmPassword = 'Please confirm your password';
     } else if (password !== confirmPassword) {
       e.confirmPassword = 'Passwords do not match';
     }
+
     setErrors(e);
     return !e.username && !e.email && !e.mobile && !e.password && !e.confirmPassword;
   }
@@ -50,7 +75,7 @@ export default function SubAdminRegisterPage() {
     if (!validate()) return;
     setLoading(true);
     try {
-    const res = await fetch('/api/subadmin/register', {
+      const res = await fetch('/api/subadmin/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, mobile, password }),
@@ -93,7 +118,6 @@ export default function SubAdminRegisterPage() {
     </svg>
   );
 
- 
   return (
     <>
       <style>{`
@@ -106,76 +130,66 @@ export default function SubAdminRegisterPage() {
           align-items: center;
           justify-content: center;
           padding: 30px 50px;
-          padding-right:120px;
+          padding-right: 120px;
         }
         @keyframes slideUp {
           from { opacity: 0; transform: translateY(30px); }
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>
-      
-       {/* Success Popup */}
-{/* Success Popup */}
-{showSuccessPopup && (
-  <div style={{
-    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-    zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '20px'
-  }}>
-    <div style={{
-      background: '#fff', borderRadius: '16px', padding: '36px 32px',
-      maxWidth: '420px', width: '100%', textAlign: 'center',
-      boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-      animation: 'slideUp 0.4s ease'
-    }}>
-      {/* Green Check Icon */}
-      <div style={{
-        width: '70px', height: '70px', borderRadius: '50%',
-        background: '#eaf3de', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', margin: '0 auto 20px'
-      }}>
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" strokeWidth="2.5">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      </div>
 
-      {/* Title */}
-      <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#111', marginBottom: '12px' }}>
-        Registration Request Sent!
-      </h3>
-
-      {/* Message */}
-      <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.7', marginBottom: '8px' }}>
-        Your registration request has been successfully submitted to the Admin.
-      </p>
-      <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.7', marginBottom: '28px' }}>
-        Once the Admin <strong>approves</strong> your request, you will receive an <strong>email</strong>.
-      </p>
-
-      {/* OK Button */}
-      <button
-        onClick={() => router.push('/admin/login')}
-        style={{
-          width: '100%', padding: '12px',
-          background: 'linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%)',
-          color: '#fff', border: 'none', borderRadius: '8px',
-          fontSize: '15px', fontWeight: 600, cursor: 'pointer'
-        }}
-      >
-        OK, Got it!
-      </button>
-    </div>
-  </div>
-)}
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+          zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '16px', padding: '36px 32px',
+            maxWidth: '420px', width: '100%', textAlign: 'center',
+            boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+            animation: 'slideUp 0.4s ease'
+          }}>
+            <div style={{
+              width: '70px', height: '70px', borderRadius: '50%',
+              background: '#eaf3de', display: 'flex', alignItems: 'center',
+              justifyContent: 'center', margin: '0 auto 20px'
+            }}>
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#3B6D11" strokeWidth="2.5">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#111', marginBottom: '12px' }}>
+              Registration Request Sent!
+            </h3>
+            <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.7', marginBottom: '8px' }}>
+              Your registration request has been successfully submitted to the Admin.
+            </p>
+            <p style={{ fontSize: '14px', color: '#555', lineHeight: '1.7', marginBottom: '28px' }}>
+              Once the Admin <strong>approves</strong> your request, you will receive an <strong>email</strong>.
+            </p>
+            <button
+              onClick={() => router.push('/admin/login')}
+              style={{
+                width: '100%', padding: '12px',
+                background: 'linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%)',
+                color: '#fff', border: 'none', borderRadius: '8px',
+                fontSize: '15px', fontWeight: 600, cursor: 'pointer'
+              }}
+            >
+              OK, Got it!
+            </button>
+          </div>
+        </div>
+      )}
 
       <div style={{
         width: '140%', maxWidth: '560px', background: 'white',
         padding: '40px 45px', borderRadius: '15px',
         boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
         animation: 'slideUp 0.5s ease',
-       
       }}>
-        {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '35px' }}>
           <h2 style={{ color: '#333', fontSize: '28px', fontWeight: 600, marginBottom: '8px' }}>
             Sub Admin Register
@@ -185,9 +199,9 @@ export default function SubAdminRegisterPage() {
           </p>
         </div>
 
-        <form onSubmit={handleRegister}>
+        <form onSubmit={handleRegister} noValidate>
 
-          {/* 1. Username */}
+          {/* Username */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontWeight: 500, color: '#333', marginBottom: '8px', fontSize: '14px' }}>
               Username
@@ -208,7 +222,7 @@ export default function SubAdminRegisterPage() {
             )}
           </div>
 
-          {/* 2. Email ID */}
+          {/* Email */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontWeight: 500, color: '#333', marginBottom: '8px', fontSize: '14px' }}>
               Email ID
@@ -229,7 +243,7 @@ export default function SubAdminRegisterPage() {
             )}
           </div>
 
-          {/* 3. Mobile No */}
+          {/* Mobile */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontWeight: 500, color: '#333', marginBottom: '8px', fontSize: '14px' }}>
               Mobile No
@@ -251,7 +265,7 @@ export default function SubAdminRegisterPage() {
             )}
           </div>
 
-          {/* 4. Password */}
+          {/* Password */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontWeight: 500, color: '#333', marginBottom: '8px', fontSize: '14px' }}>
               Password
@@ -278,7 +292,7 @@ export default function SubAdminRegisterPage() {
             )}
           </div>
 
-          {/* 5. Confirm Password */}
+          {/* Confirm Password */}
           <div style={{ marginBottom: '20px' }}>
             <label style={{ display: 'block', fontWeight: 500, color: '#333', marginBottom: '8px', fontSize: '14px' }}>
               Confirm Password
@@ -305,7 +319,7 @@ export default function SubAdminRegisterPage() {
             )}
           </div>
 
-          {/* Submit Button */}
+          {/* Submit */}
           <button
             type="submit"
             disabled={loading}
@@ -321,7 +335,6 @@ export default function SubAdminRegisterPage() {
             {loading ? 'Registering...' : 'Submit'}
           </button>
 
-          {/* Back to Login */}
           <div style={{ textAlign: 'center', marginTop: '15px' }}>
             <Link
               href="/admin/login"

@@ -66,7 +66,33 @@ export default function UserDashboard() {
   const [feedbackModal, setFeedbackModal] = useState(false);
   const [feedbackForm, setFeedbackForm] = useState({ name: '', email: '', message: '' });
   const [feedbackLoading, setFeedbackLoading] = useState(false);
-  
+
+  // ---- Disable right-click, copy, devtools shortcuts (content protection) ----
+  useEffect(() => {
+    const disableRightClick = (e: MouseEvent) => e.preventDefault();
+    const disableCopy = (e: ClipboardEvent) => e.preventDefault();
+    const disableKeys = (e: KeyboardEvent) => {
+      // Disable Ctrl+C, Ctrl+U (view source), Ctrl+S (save), F12 (devtools), Ctrl+Shift+I/J
+      if (
+        (e.ctrlKey && (e.key === 'c' || e.key === 'u' || e.key === 's')) ||
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J'))
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', disableRightClick);
+    document.addEventListener('copy', disableCopy);
+    document.addEventListener('keydown', disableKeys);
+
+    return () => {
+      document.removeEventListener('contextmenu', disableRightClick);
+      document.removeEventListener('copy', disableCopy);
+      document.removeEventListener('keydown', disableKeys);
+    };
+  }, []);
+
   // ---- Load all data ----
   useEffect(() => {
     fetchAllData('all');
@@ -388,6 +414,24 @@ async function translateWidgets(items: WidgetItem[]) {
           color: #333;
           font-size: 14px;
           overflow-x: hidden;
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+
+        /* Allow text selection inside input/textarea fields only */
+        input, textarea {
+          -webkit-user-select: text;
+          -moz-user-select: text;
+          -ms-user-select: text;
+          user-select: text;
+        }
+
+        img {
+          -webkit-user-drag: none;
+          user-drag: none;
+          pointer-events: none;
         }
 
         /* ===== CONTAINER ===== */
@@ -876,6 +920,8 @@ async function translateWidgets(items: WidgetItem[]) {
         className="site-logo"
         style={{ height: '90px', width: 'auto', filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))' }}
         onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+        onContextMenu={(e) => e.preventDefault()}
+        draggable={false}
       />
       <span style={{ fontSize: '28px', fontWeight: 800, marginLeft: '-6px' }}>MahaSahyadri</span>
     </div>
@@ -911,7 +957,7 @@ async function translateWidgets(items: WidgetItem[]) {
                 onClick={() => { router.push(`/user/news/${item.Id}`); setShowSearchResults(false); setSearchQuery(''); }}
               >
                 {item.Gallery?.[0] ? (
-                  <img src={item.Gallery[0]} className="search-item-img" alt="" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                  <img src={item.Gallery[0]} className="search-item-img" alt="" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} onContextMenu={(e) => e.preventDefault()} draggable={false} />
                 ) : (
                   <div className="search-item-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📷</div>
                 )}
@@ -974,6 +1020,8 @@ async function translateWidgets(items: WidgetItem[]) {
                 src={item.HeroImage || '/images/Mahasahyadri.png'}
                 alt={item.Title}
                 onError={e => { (e.target as HTMLImageElement).src = '/images/Mahasahyadri.png'; }}
+                onContextMenu={(e) => e.preventDefault()}
+                draggable={false}
               />
               <div className="slide-overlay">
                 <div className="slide-title">{item.Title}</div>
@@ -1042,6 +1090,8 @@ async function translateWidgets(items: WidgetItem[]) {
                       alt={item.Title} 
                       className="news-main-image"
                       onError={e => { (e.target as HTMLImageElement).src = '/images/placeholder.jpg'; }} 
+                      onContextMenu={(e) => e.preventDefault()}
+                      draggable={false}
                     />
                   ) : (
                     <div style={{ 
