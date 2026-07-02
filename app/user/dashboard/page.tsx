@@ -33,6 +33,9 @@ export default function UserDashboard() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [translatedWidgets, setTranslatedWidgets] = useState<Record<number, string>>({});
   const [breakingNews, setBreakingNews] = useState<string[]>([]);
+  const [translatedBreaking, setTranslatedBreaking] = useState<string[]>([]);
+  const [translatedSlider, setTranslatedSlider] = useState<Record<number, { title: string; excerpt: string }>>({});
+  const [translatedSearch, setTranslatedSearch] = useState<Record<number, string>>({});
   const [sliderNews, setSliderNews] = useState<SliderItem[]>([]);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -132,6 +135,30 @@ useEffect(() => {
   }
 }, [language, mostViewed, heroes, vividha]);
 
+useEffect(() => {
+  if (language === 'en' && breakingNews.length > 0) {
+    translateBreaking(breakingNews);
+  } else {
+    setTranslatedBreaking([]);
+  }
+}, [language, breakingNews]);
+
+useEffect(() => {
+  if (language === 'en' && sliderNews.length > 0) {
+    translateSlider(sliderNews);
+  } else {
+    setTranslatedSlider({});
+  }
+}, [language, sliderNews]);
+
+useEffect(() => {
+  if (language === 'en' && searchResults.length > 0) {
+    translateSearchResults(searchResults);
+  } else {
+    setTranslatedSearch({});
+  }
+}, [language, searchResults]);
+
   async function fetchAllData(cat: string) {
     try {
       const apiCat = cat === 'all' ? '' : cat;
@@ -184,6 +211,8 @@ useEffect(() => {
   document.addEventListener('mousedown', handleClickOutside);
   return () => document.removeEventListener('mousedown', handleClickOutside);
 }, []);
+
+
   // ---- Breaking ticker ----
   useEffect(() => {
     const ticker = tickerRef.current;
@@ -383,6 +412,75 @@ async function translateWidgets(items: WidgetItem[]) {
       setTranslatedWidgets(map);
     }
   } catch (err) { console.error(err); }
+}
+
+async function translateSlider(items: SliderItem[]) {
+  if (items.length === 0) return;
+  try {
+    const [titleRes, excerptRes] = await Promise.all([
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: items.map(i => i.Title) })
+      }),
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: items.map(i => i.Excerpt) })
+      })
+    ]);
+    const [titleData, excerptData] = await Promise.all([
+      titleRes.json(), excerptRes.json()
+    ]);
+    if (titleData.status === 'OK' && excerptData.status === 'OK') {
+      const map: Record<number, { title: string; excerpt: string }> = {};
+      items.forEach((item, i) => {
+        map[item.Id] = {
+          title: titleData.results[i],
+          excerpt: excerptData.results[i]
+        };
+      });
+      setTranslatedSlider(map);
+    }
+  } catch (err) {
+    console.error('Slider translate error:', err);
+  }
+}
+
+async function translateBreaking(items: string[]) {
+  if (items.length === 0) return;
+  try {
+    const res = await fetch('/api/translateapi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts: items })
+    });
+    const data = await res.json();
+    if (data.status === 'OK') setTranslatedBreaking(data.results);
+  } catch (err) {
+    console.error('Breaking translate error:', err);
+  }
+}
+
+async function translateSearchResults(items: NewsItem[]) {
+  if (items.length === 0) return;
+  try {
+    const res = await fetch('/api/translateapi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts: items.map(i => i.Title) })
+    });
+    const data = await res.json();
+    if (data.status === 'OK') {
+      const map: Record<number, string> = {};
+      items.forEach((item, i) => {
+        map[item.Id] = data.results[i];
+      });
+      setTranslatedSearch(map);
+    }
+  } catch (err) {
+    console.error('Search translate error:', err);
+  }
 }
 
   async function handleSearch(q: string) {
@@ -962,8 +1060,10 @@ async function translateWidgets(items: WidgetItem[]) {
                   <div className="search-item-img" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>📷</div>
                 )}
                 <div>
-                  <div className="search-item-title">{item.Title}</div>
-                  <div className="search-item-meta">📅 {getRelativeTime(item.PublishDate, language)} • 👤 {item.Author}</div>
+                  <div className="search-item-title">
+    {language === 'en' && translatedSearch[item.Id] ? translatedSearch[item.Id] : item.Title}
+  </div>
+                 <div className="search-item-meta">📅 {getRelativeTime(item.PublishDate, language)} • 👤 {item.Author}</div>
                 </div>
               </div>
             ))
@@ -993,13 +1093,15 @@ async function translateWidgets(items: WidgetItem[]) {
     <span className="breaking-label">🔴 {translations[language].breaking}:</span>
     <div className="news-ticker-wrapper">
       <div className="news-ticker" ref={tickerRef}>
-        {breakingNews.length === 0 ? (
-          <span>{translations[language].noBreaking}</span>
-        ) : (
-          breakingNews.map((title, i) => (
-            <span key={i}>{title} &nbsp;&nbsp;&nbsp;</span>
-          ))
-        )}
+       {breakingNews.length === 0 ? (
+  <span>{translations[language].noBreaking}</span>
+) : (
+  breakingNews.map((title, i) => (
+    <span key={i}>
+      {language === 'en' && translatedBreaking[i] ? translatedBreaking[i] : title} &nbsp;&nbsp;&nbsp;
+    </span>
+  ))
+)}
       </div>
     </div>
   </div>
@@ -1024,8 +1126,12 @@ async function translateWidgets(items: WidgetItem[]) {
                 draggable={false}
               />
               <div className="slide-overlay">
-                <div className="slide-title">{item.Title}</div>
-                <div className="slide-description">{item.Excerpt}</div>
+                <div className="slide-title">
+  {language === 'en' && translatedSlider[item.Id] ? translatedSlider[item.Id].title : item.Title}
+</div>
+<div className="slide-description">
+  {language === 'en' && translatedSlider[item.Id] ? translatedSlider[item.Id].excerpt : item.Excerpt}
+</div>
                 <div style={{ display: 'flex', gap: '12px', marginTop: '8px', fontSize: '12px', flexWrap: 'wrap' }}>
                   🏷️ {categoryMap[item.Category] || item.Category} &nbsp;
                   📅 {item.TimeAgo} &nbsp;

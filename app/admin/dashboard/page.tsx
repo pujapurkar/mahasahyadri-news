@@ -56,7 +56,8 @@
     const [catEn, setCatEn] = useState('');
     const [aboutModal, setAboutModal] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
-
+   const [translatedSlider, setTranslatedSlider] = useState<Record<number, { title: string; excerpt: string }>>({});
+   const [translatedBreaking, setTranslatedBreaking] = useState<string[]>([]);
     const [subAdminRequests, setSubAdminRequests] = useState([]);
     const [showNotifications, setShowNotifications] = useState(false);
 
@@ -246,6 +247,23 @@ useEffect(() => {
     setTranslatedWidgets({});
   }
 }, [language, mostViewed, heroes, vividha]);
+
+
+useEffect(() => {
+  if (language === 'en' && sliderNews.length > 0) {
+    translateSlider(sliderNews);
+  } else {
+    setTranslatedSlider({});
+  }
+}, [language, sliderNews]);
+
+useEffect(() => {
+  if (language === 'en' && breakingNews.length > 0) {
+    translateBreaking(breakingNews);
+  } else {
+    setTranslatedBreaking([]);
+  }
+}, [language, breakingNews]);
 
 useEffect(() => {
   if (language === 'en' && news.length > 0) {
@@ -547,6 +565,54 @@ function getLocalDateTime() {
     console.error('Translation error:', err);
   } finally {
     setIsTranslating(false);
+  }
+}
+
+async function translateSlider(items: SliderItem[]) {
+  if (items.length === 0) return;
+  try {
+    const [titleRes, excerptRes] = await Promise.all([
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: items.map(i => i.Title) })
+      }),
+      fetch('/api/translateapi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ texts: items.map(i => i.Excerpt) })
+      })
+    ]);
+    const [titleData, excerptData] = await Promise.all([
+      titleRes.json(), excerptRes.json()
+    ]);
+    if (titleData.status === 'OK' && excerptData.status === 'OK') {
+      const map: Record<number, { title: string; excerpt: string }> = {};
+      items.forEach((item, i) => {
+        map[item.Id] = {
+          title: titleData.results[i],
+          excerpt: excerptData.results[i]
+        };
+      });
+      setTranslatedSlider(map);
+    }
+  } catch (err) {
+    console.error('Slider translate error:', err);
+  }
+}
+
+async function translateBreaking(items: string[]) {
+  if (items.length === 0) return;
+  try {
+    const res = await fetch('/api/translateapi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ texts: items })
+    });
+    const data = await res.json();
+    if (data.status === 'OK') setTranslatedBreaking(data.results);
+  } catch (err) {
+    console.error('Breaking translate error:', err);
   }
 }
 
@@ -1232,7 +1298,11 @@ const handleLogout = () => {
     <span className="breaking-label">🔴 {t.breaking}</span>
     <div className="news-ticker-wrapper">
       <div className="news-ticker" ref={tickerRef}>
-        {breakingNews.map((title, i) => <span key={i}>{title} &nbsp;&nbsp;&nbsp;</span>)}
+       {breakingNews.map((title, i) => (
+        <span key={i}>
+          {language === 'en' && translatedBreaking[i] ? translatedBreaking[i] : title} &nbsp;&nbsp;&nbsp;
+        </span>
+      ))}
       </div>
     </div>
   </div>
@@ -1246,11 +1316,15 @@ const handleLogout = () => {
                 onClick={() => router.push(`/admin/news/${item.Id}?admin=1`)} style={{ cursor: 'pointer' }}>
                 <img src={item.HeroImage} alt={item.Title} onError={e => { (e.target as HTMLImageElement).src = '/images/no-image.jpg'; }} />
                 <div className="slide-overlay">
-                  <div className="slide-title">{item.Title}</div>
-                  <div className="slide-description">{item.Excerpt}</div>
-                  <div style={{ display: 'flex', gap: '18px', marginTop: '10px', fontSize: '14px' }}>
-                    🏷️ {item.Category} &nbsp; 📅 {item.TimeAgo} &nbsp; 👤 {item.Author}
-                  </div>
+                  <div className="slide-title">
+  {language === 'en' && translatedSlider[item.Id] ? translatedSlider[item.Id].title : item.Title}
+</div>
+<div className="slide-description">
+  {language === 'en' && translatedSlider[item.Id] ? translatedSlider[item.Id].excerpt : item.Excerpt}
+</div>
+<div style={{ display: 'flex', gap: '18px', marginTop: '10px', fontSize: '14px' }}>
+  🏷️ {categoryMap[item.Category] || item.Category} &nbsp; 📅 {item.TimeAgo} &nbsp; 👤 {item.Author}
+</div>
                 </div>
               </div>
             ))}
