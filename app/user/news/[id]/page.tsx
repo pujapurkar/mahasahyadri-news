@@ -194,10 +194,10 @@ const [isTranslating, setIsTranslating] = useState(false);
   return (
     <div>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;700&family=Poppins:wght@300;400;500;600;700&display=swap');
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-          font-family: 'Noto Sans Devanagari','Poppins',sans-serif;
+          font-family: 'Mukta', 'Poppins', sans-serif;
           background: #f5f7fa;
           -webkit-user-select: none;
           -moz-user-select: none;

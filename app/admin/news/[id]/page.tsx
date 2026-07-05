@@ -127,6 +127,12 @@ useEffect(() => {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
 
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+      body { font-family: 'Mukta', 'Poppins', sans-serif; }
+      * { box-sizing: border-box; }
+    `}</style>
+    
       {/* HEADER */}
       <div style={{
         background: 'linear-gradient(135deg,#27A4F3,#1e88d4)',

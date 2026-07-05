@@ -751,10 +751,12 @@ const handleLogout = () => {
 )}
 
         <style>{`
+          @import url('https://fonts.googleapis.com/css2?family=Mukta:wght@400;700&family=Poppins:wght@300;400;500;600;700&display=swap');
           * { margin: 0; padding: 0; box-sizing: border-box; }
           html { overflow-x: hidden; width: 100%; }
-          body { font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif; background: linear-gradient(135deg, #f5f7fa 0%, #e8f4f8 100%); color: #333; font-size: 14px; overflow-x: hidden; }
-          @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&family=Poppins:wght@300;400;500;600;700&display=swap');
+          body { font-family: 'Mukta', sans-serif;
+  font-feature-settings: "liga" 1, "calt" 1;
+  -webkit-font-feature-settings: "liga" 1, "calt" 1; background: linear-gradient(135deg, #f5f7fa 0%, #e8f4f8 100%); color: #333; font-size: 14px; overflow-x: hidden; }
           .container { max-width: 1400px; margin: 0 auto; padding: 0 12px; width: 100%; }
        
 .top-header { background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: white; padding: 4px 16px 6px; box-shadow: 0 2px 10px rgba(39,164,243,0.3); }
@@ -1031,7 +1033,9 @@ const handleLogout = () => {
           .news-card:hover .news-main-image { transform: scale(1.05); }
           .news-content-area { display: flex; flex-direction: column; justify-content: space-between; min-height: 240px; }
           .news-category { display: inline-block; background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: white; padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; margin-bottom: 10px; width: fit-content; }
-          .news-title { font-size: 24px; font-weight: 700; margin-bottom: 10px; color: #111; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+          .news-title { font-size: 24px; font-weight: 700; margin-bottom: 10px; color: #111; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-family: 'Mukta', sans-serif; font-weight: 700;
+  font-feature-settings: "liga" 1, "calt" 1;
+  -webkit-font-feature-settings: "liga" 1, "calt" 1;}
           .news-title a { text-decoration: none; color: inherit; transition: color 0.3s; }
           .news-title a:hover { color: #27A4F3; }
           .news-excerpt { color: #555; line-height: 1.6; margin-bottom: 12px; font-size: 16px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
@@ -1051,9 +1055,9 @@ const handleLogout = () => {
           .footer { background: linear-gradient(135deg, #1d74bb 0%, #1665a8 100%); color: white; padding: 24px 0 18px; margin-top: 24px; font-size: 13px; }
           .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; }
           .modal-overlay.active { display: flex; }
-          .modal-content { background: #fff; border-radius: 0; width: 100%; height: 100vh; max-width: 100%; overflow-y: auto; display: flex; flex-direction: column; }
+          .modal-content { background: #fff; border-radius: 0; width: 100%; height: 100vh; max-width: 100%; overflow-y: auto; display: flex; flex-direction: column; font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif;}
           .modal-header { background: linear-gradient(135deg, #27A4F3 0%, #1e88d4 100%); color: #fff; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
-          .modal-body { padding: 14px 16px 10px; flex: 1; overflow-y: auto; }
+          .modal-body { padding: 14px 16px 10px; flex: 1; overflow-y: auto; font-family: 'Noto Sans Devanagari', 'Poppins', sans-serif;}
           .form-group { margin-bottom: 14px; }
           .form-label { font-weight: 700; margin-bottom: 6px; display: block; font-size: 13px; }
           .form-control { width: 100%; padding: 9px 10px; border: 1px solid #e0e0e0; border-radius: 8px; font-size: 13px; font-family: inherit; }
@@ -1628,11 +1632,35 @@ const handleLogout = () => {
                 <label className="form-label">
     {language === 'mr' ? 'शीर्षक' : 'Title'}
   </label>
-                  <input type="text" className="form-control" value={form.headline} onChange={e => setForm({ ...form, headline: e.target.value })} placeholder="बातमीचे शीर्षक लिहा" />
+                  <input 
+  type="text" 
+  className="form-control" 
+  value={form.headline} 
+  onChange={e => setForm({ ...form, headline: e.target.value })} 
+  placeholder="बातमीचे शीर्षक लिहा"
+  lang="mr"
+  style={{ 
+    fontFamily: "'Noto Sans Devanagari', sans-serif",
+    fontSize: '15px',
+    lineHeight: '2'
+  }}
+/>
                 </div>
                 <div className="form-group">
                   <label className="form-label">{language === 'mr' ? 'माहिती' : 'Content'}</label>
-                  <textarea className="form-control" rows={6} value={form.content} onChange={e => setForm({ ...form, content: e.target.value })} placeholder="बातमीची संपूर्ण माहिती लिहा" />
+                  <textarea 
+  className="form-control" 
+  rows={6}
+  value={form.content} 
+  onChange={e => setForm({ ...form, content: e.target.value })} 
+  placeholder="बातमीची संपूर्ण माहिती लिहा"
+  lang="mr"
+  style={{ 
+    fontFamily: "'Noto Sans Devanagari', sans-serif",
+    fontSize: '15px',
+    lineHeight: '2'
+  }}
+/>
                 </div>
                 <div className="form-group" style={{ position: 'relative' }}>
 <label className="form-label">{t.category}</label>
