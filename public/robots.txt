@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /subadmin/
+Disallow: /forgot-password
+Allow: /
